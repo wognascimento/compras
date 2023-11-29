@@ -1,0 +1,32 @@
+﻿<UserControl
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Compras.Views"
+             xmlns:syncfusion="http://schemas.syncfusion.com/wpf" x:Class="Compras.Views.ViewCadastroFamiliaComprador"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="500" Loaded="UserControl_Loaded">
+    <Grid>
+
+        <syncfusion:SfDataGrid
+            ItemsSource="{Binding FamiliasProduto}"
+            SelectedItem="{Binding FamiliaProduto}" 
+            AutoGenerateColumns="False"
+            ColumnSizer="Auto" 
+            AllowFiltering="True"
+            CanUseViewFilter="True"
+            AllowEditing="True" 
+            AllowResizingColumns="True" 
+            AllowResizingHiddenColumns="True" 
+            RowValidated="SfDataGrid_RowValidated" 
+            RowValidating="SfDataGrid_RowValidating" >
+            <syncfusion:SfDataGrid.Columns>
+                <syncfusion:GridTextColumn MappingName="codigofamilia" HeaderText="ID" AllowEditing="False"/>
+                <syncfusion:GridTextColumn MappingName="nomefamilia" HeaderText="FAMÍLIA" AllowEditing="False"/>
+                <syncfusion:GridTextColumn MappingName="res_compra" HeaderText="COMPRADOR(A)"/>
+            </syncfusion:SfDataGrid.Columns>
+        </syncfusion:SfDataGrid>
+
+    </Grid>
+</UserControl>

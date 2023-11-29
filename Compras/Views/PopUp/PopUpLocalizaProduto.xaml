@@ -1,0 +1,52 @@
+﻿<UserControl
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Compras.Views.PopUp"
+             xmlns:syncfusion="http://schemas.syncfusion.com/wpf" 
+             x:Class="Compras.Views.PopUp.PopUpLocalizaProduto"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800" 
+             Loaded="UserControl_Loaded">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+<!--
+        <syncfusion:SfTextInputLayout Hint="Name" >
+            <TextBox Text="John"/>
+        </syncfusion:SfTextInputLayout>
+-->
+
+
+        <syncfusion:SfTextInputLayout
+            Hint="Buscar Produto"
+            TrailingViewPosition="Outside"
+            InputViewPadding="5"
+            CharCountVisibility="Collapsed"
+            HelperTextVisibility="Collapsed" Margin="5">
+            <TextBox 
+                x:Name="txtBusca"  />
+        </syncfusion:SfTextInputLayout>
+
+        <syncfusion:SfDataGrid 
+            x:Name="dataGrid"
+            Grid.Row="1" 
+            ItemsSource="{Binding Descricoes}"
+            SelectedItem="{Binding Descricao}" 
+            EnableDataVirtualization="True"
+            ShowBusyIndicator="True"
+            ColumnSizer="AutoWithLastColumnFill" 
+            AutoGenerateColumns="False" 
+            FontSize="10" AllowResizingColumns="True" MouseDoubleClick="dataGrid_MouseDoubleClick">
+            <syncfusion:SfDataGrid.Columns>
+                <!--<syncfusion:GridTextColumn MappingName="familia"/>-->
+                <syncfusion:GridTextColumn MappingName="planilha" ColumnSizer="SizeToHeader"/>
+                <syncfusion:GridTextColumn MappingName="descricao_completa"/>
+                <syncfusion:GridTextColumn MappingName="unidade" HeaderText="unid." ColumnSizer="SizeToHeader"/>
+            </syncfusion:SfDataGrid.Columns>
+        </syncfusion:SfDataGrid>
+    </Grid>
+</UserControl>

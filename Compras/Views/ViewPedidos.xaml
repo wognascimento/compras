@@ -1,0 +1,91 @@
+﻿<UserControl x:Class="Compras.Views.ViewPedidos"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Compras.Views" 
+             xmlns:syncfusion="http://schemas.syncfusion.com/wpf"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800" Loaded="UserControl_Loaded">
+
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="0.5*"/>
+            </Grid.ColumnDefinitions>
+
+            <syncfusion:SfDataGrid
+                x:Name="pedidos"
+                Grid.Column="0"
+                ItemsSource="{Binding Pedidos}"
+                SelectedItem="{Binding Pedido}" 
+                ColumnSizer="AutoLastColumnFill" 
+                AutoGenerateColumns="false" 
+                AllowFiltering="True" 
+                AllowResizingColumns="True" FontSize="10" MouseDoubleClick="OnDbClick">
+                <syncfusion:SfDataGrid.Columns>
+                    <syncfusion:GridNumericColumn MappingName="idpedido" NumberNegativePattern="0" NumberDecimalDigits="0"/>
+                    <syncfusion:GridTextColumn MappingName="nomefantasia"/>
+                    <syncfusion:GridTextColumn MappingName="abreviacao"/>
+                    <syncfusion:GridDateTimeColumn MappingName="datapedido"/>
+                    <syncfusion:GridTextColumn MappingName="comprador"/>
+                    <syncfusion:GridDateTimeColumn MappingName="dataentrega"/>
+                    <syncfusion:GridTextColumn MappingName="descricao_cond_pagamento"/>
+                    <syncfusion:GridTextColumn MappingName="status" ColumnSizer="SizeToHeader"/>
+                </syncfusion:SfDataGrid.Columns>
+            </syncfusion:SfDataGrid>
+
+        <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition />
+                    <RowDefinition Height="auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock 
+                    Grid.Row="0" 
+                    Text="ITENS DO PEDIDO" 
+                    HorizontalAlignment="Center" 
+                    FontSize="15"/>
+
+                <syncfusion:SfDataGrid x:Name="ItensPedido"
+                    Grid.Row="1"
+                    ItemsSource="{Binding PedidoDets}"
+                    ColumnSizer="AutoLastColumnFill" 
+                    AutoGenerateColumns="false" 
+                    AllowFiltering="True" 
+                    AllowResizingColumns="True"
+                    FontSize="10">
+                <syncfusion:SfDataGrid.Columns>
+                    <syncfusion:GridTextColumn MappingName="planilha"/>
+                    <syncfusion:GridTextColumn MappingName="descricao_completa"/>
+                    <syncfusion:GridTextColumn MappingName="unidade" HeaderText="unid." ColumnSizer="SizeToHeader"/>
+                    <syncfusion:GridNumericColumn 
+                        MappingName="qtde" 
+                        HeaderText="qtde." 
+                        ColumnSizer="SizeToHeader"
+                         NumberDecimalDigits="2"
+                         NumberDecimalSeparator="," 
+                         NumberGroupSizes="3" 
+                         NumberGroupSeparator="."/>
+                    <syncfusion:GridCurrencyColumn MappingName="vlrunit" HeaderText="valor." ColumnSizer="SizeToHeader"/>
+                    <syncfusion:GridCurrencyColumn MappingName="total" ColumnSizer="SizeToHeader"/>
+                </syncfusion:SfDataGrid.Columns>
+                </syncfusion:SfDataGrid>
+
+            </Grid>
+
+
+            <!--Grid Splitter-->
+            <syncfusion:SfGridSplitter Name="gridSplitter"
+                                   VerticalAlignment="Stretch" 
+                                   ResizeBehavior="PreviousAndNext"
+                                   Grid.Column="1">
+            </syncfusion:SfGridSplitter>
+        </Grid>
+
+  
+
+</UserControl>

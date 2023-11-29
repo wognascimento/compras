@@ -1,0 +1,69 @@
+﻿<UserControl
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Compras.Views.PopUp"
+             xmlns:syncfusion="http://schemas.syncfusion.com/wpf" 
+             x:Class="Compras.Views.PopUp.PopUpNovaSolicitacao"
+             mc:Ignorable="d" d:Padding="5" Loaded="OnLoaded">
+
+    <Grid Margin="5,5,5,5">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+
+        <syncfusion:SfTextInputLayout 
+            InputViewPadding="5"
+            CharCountVisibility="Collapsed"
+            HelperTextVisibility="Collapsed"
+            ContainerType="Outlined" 
+            Hint="Tipo" 
+            Grid.Row="0"
+            Grid.Column="0" Margin="0,0,5,0">
+            <ComboBox x:Name="tipo" >
+                <ComboBoxItem Content="ALMOXARIFADO"/>
+                <ComboBoxItem Content="ESTOQUE"/>
+                <ComboBoxItem Content="SERVIÇO"/>
+            </ComboBox>
+
+        </syncfusion:SfTextInputLayout>
+
+        <syncfusion:SfTextInputLayout 
+            InputViewPadding="5"
+            CharCountVisibility="Collapsed"
+            HelperTextVisibility="Collapsed"
+            ContainerType="Outlined" 
+            Hint="Almoxarifado" 
+            Grid.Row="0"
+            Grid.Column="1">
+            <TextBox x:Name="almoxRecebimento" Text="JACAREÍ"/>
+        </syncfusion:SfTextInputLayout>
+
+
+        <syncfusion:ButtonAdv x:Name="btnGrevar" 
+            Grid.Row="2" 
+            Grid.Column="2" 
+            HorizontalAlignment="Right" 
+            VerticalAlignment="Top" 
+            Height="35" 
+            Label="Gravar"
+            Width="75" 
+            Click="OnClickGravar" 
+            Margin="0,5,0,0" 
+            SizeMode="Normal"
+            LargeIcon="/Icones/icons8-adicionar-linha-52.png" 
+            SmallIcon="/Icones/icons8-adicionar-linha-52.png" IsEnabled="False">
+        </syncfusion:ButtonAdv>
+
+
+
+
+    </Grid>
+</UserControl>

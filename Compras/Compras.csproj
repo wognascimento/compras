@@ -1,0 +1,98 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net7.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>Icones\logo-pink.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="App.ico" />
+    <None Remove="Assets\Search-WF.tiff" />
+    <None Remove="Icones\configuracao-de-dados-windows-metro-16.png" />
+    <None Remove="Icones\favicon.ico" />
+    <None Remove="Icones\icons8-abrir-em-janela-26.png" />
+    <None Remove="Icones\icons8-abrir-em-janela-52.png" />
+    <None Remove="Icones\icons8-adicionar-linha-26.png" />
+    <None Remove="Icones\icons8-adicionar-linha-52.png" />
+    <None Remove="Icones\icons8-apagador-26.png" />
+    <None Remove="Icones\icons8-apagador-52.png" />
+    <None Remove="Icones\icons8-edite-a-linha-26.png" />
+    <None Remove="Icones\icons8-edite-a-linha-52.png" />
+    <None Remove="Icones\icons8-enviado-26.png" />
+    <None Remove="Icones\icons8-enviado-52.png" />
+    <None Remove="Icones\icons8-excluir-linha-26.png" />
+    <None Remove="Icones\icons8-excluir-linha-52.png" />
+    <None Remove="Icones\icons8-pesquisar-104.png" />
+    <None Remove="Icones\icons8-pesquisar-26.png" />
+    <None Remove="Icones\icons8-pesquisar-52.png" />
+    <None Remove="Icones\icons8-usu_0025c3_0025a1rio-de-g_0025c3_0025aanero-neutro-windows-metro-16.png" />
+    <None Remove="Modelos\PEDIDO-COMPRA.xlsm" />
+    <None Remove="Modelos\PEDIDO-COMPRA.xlsx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Icones\logo-pink.ico" />
+    <Content Include="Modelos\PEDIDO-COMPRA.xlsm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  
+  
+  <ItemGroup>
+    <None Include="Project_Readme.html" />
+  </ItemGroup>
+
+  
+  
+  <ItemGroup>
+    <PackageReference Include="BrasilAPI" Version="1.0.6" />
+    <PackageReference Include="ClinicalOffice.MvvmTools.WPF.Core" Version="1.3.0" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.1" />
+    <PackageReference Include="Refit" Version="6.3.2" />
+    <PackageReference Include="syncfusion.ui.wpf.net" Version="20.3.0.56" />
+    <PackageReference Include="Z.EntityFramework.Extensions.EFCore" Version="7.18.3" />
+  </ItemGroup>
+
+  
+  
+  <ItemGroup>
+    <Resource Include="App.ico" />
+    <Content Include="Assets\Search-WF.tiff">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Resource Include="Icones\configuracao-de-dados-windows-metro-16.png" />
+    <Resource Include="Icones\favicon.ico" />
+    <Resource Include="Icones\icons8-abrir-em-janela-26.png" />
+    <Resource Include="Icones\icons8-abrir-em-janela-52.png" />
+    <Resource Include="Icones\icons8-adicionar-linha-26.png" />
+    <Resource Include="Icones\icons8-adicionar-linha-52.png" />
+    <Resource Include="Icones\icons8-apagador-26.png" />
+    <Resource Include="Icones\icons8-apagador-52.png" />
+    <Resource Include="Icones\icons8-edite-a-linha-26.png" />
+    <Resource Include="Icones\icons8-edite-a-linha-52.png" />
+    <Resource Include="Icones\icons8-enviado-26.png" />
+    <Resource Include="Icones\icons8-enviado-52.png" />
+    <Resource Include="Icones\icons8-excluir-linha-26.png" />
+    <Resource Include="Icones\icons8-excluir-linha-52.png" />
+    <Resource Include="Icones\icons8-pesquisar-104.png" />
+    <Resource Include="Icones\icons8-pesquisar-26.png" />
+    <Resource Include="Icones\icons8-pesquisar-52.png" />
+    <Resource Include="Icones\icons8-usu_0025c3_0025a1rio-de-g_0025c3_0025aanero-neutro-windows-metro-16.png" />
+    <Content Include="Modelos\PEDIDO-COMPRA.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  
+  
+  <ItemGroup>
+    <Folder Include="DataBase\ViewModel\" />
+    <Folder Include="Impressos\" />
+  </ItemGroup>
+
+</Project>
