@@ -1,16 +1,19 @@
 ﻿using Compras.Views;
 using Microsoft.EntityFrameworkCore;
+using Squirrel;
 using Syncfusion.SfSkinManager;
 using Syncfusion.Windows.Tools.Controls;
 using Syncfusion.XlsIO;
 using System;
 using System.Collections.ObjectModel;
-using System.Globalization;
+using System.Collections.Specialized;
+using System.Configuration;
+using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using Telerik.Windows.Controls;
 using Enum = System.Enum;
 using SizeMode = Syncfusion.SfSkinManager.SizeMode;
 
@@ -21,7 +24,8 @@ namespace Compras
     /// </summary>
     public partial class MainWindow : Window
     {
-        DataBaseSettings BaseSettings;
+        DataBaseSettings BaseSettings = DataBaseSettings.Instance;
+        UpdateManager manager;
         #region Fields
         private string currentVisualStyle;
 		private string currentSizeMode;
@@ -68,8 +72,12 @@ namespace Compras
         {
             InitializeComponent();
 			this.Loaded += OnLoaded;
+            StyleManager.ApplicationTheme = new Windows11Theme();
 
-            BaseSettings = DataBaseSettings.Instance;
+            var appSettings = ConfigurationManager.GetSection("appSettings") as NameValueCollection;
+            if (appSettings[0].Length > 0)
+                BaseSettings.Username = appSettings[0];
+
             txtUsername.Text = BaseSettings.Username;
             txtDataBase.Text = BaseSettings.Database;
 
@@ -82,10 +90,38 @@ namespace Compras
         /// </summary>
         /// <param name="sender">The sender.</param>
         /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
-        private void OnLoaded(object sender, RoutedEventArgs e)
+        private async void OnLoaded(object sender, RoutedEventArgs e)
         {
             CurrentVisualStyle = "Metro";
 	        CurrentSizeMode = "Default";
+            /*
+            try
+            {
+                manager = await UpdateManager.GitHubUpdateManager(@"https://github.com/wognascimento/compras");
+                var updateInfo = await manager.CheckForUpdate();
+                if (updateInfo.ReleasesToApply.Count > 0)
+                {
+                    RadWindow.Confirm(new DialogParameters()
+                    {
+                        Header = "Atualização",
+                        Content = "Existe uma atualização para o sistema, deseja atualiza?",
+                        Closed = async (object sender, WindowClosedEventArgs e) =>
+                        {
+                            var result = e.DialogResult;
+                            if (result == true)
+                            {
+                                await manager.UpdateApp();
+                                RadWindow.Alert("Sistema atualizado!\nFecha e abre o Sistema, para aplicar a atualização.");
+                            }
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                RadWindow.Alert(ex.Message);
+            }
+            */
         }
 		/// <summary>
         /// On Visual Style Changed.
@@ -433,7 +469,7 @@ namespace Compras
             adicionarFilho(new ViewConsultaProdutos(), "TODOS PRONTOS CIPOLATTI", "TODOS_PRONTOS_CIPOLATTI");
         }
 
-        private void OnOpenConsultaGerencial(object sender, RoutedEventArgs e)
+        private async void OnOpenConsultaGerencial(object sender, RoutedEventArgs e)
         {
             //ViewConsultaGerencial view = new();
             //DocumentContainer.SetHeader(view, "CONSULTA GERENCIAL");
@@ -442,7 +478,40 @@ namespace Compras
             //DocumentContainer.SetMDIWindowState(view, MDIWindowState.Maximized);
             //this._mdi.CanMDIMaximize = true;
             //this._mdi.Items.Add(view);
-            adicionarFilho(new ViewConsultaProdutos(), "CONSULTA GERENCIAL", "CONSULTA_GERENCIAL");
+            //adicionarFilho(new ViewConsultaGerencial(), "CONSULTA GERENCIAL", "CONSULTA_GERENCIAL");
+
+            try
+            {
+                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
+
+                using DatabaseContext db = new();
+                //var data = await db.PendenciaProducaos.ToListAsync();
+                var data = await db.SolicitacaoDetalhes.ToListAsync();
+
+                using ExcelEngine excelEngine = new ExcelEngine();
+                IApplication application = excelEngine.Excel;
+
+                application.DefaultVersion = ExcelVersion.Xlsx;
+
+                //Create a workbook
+                IWorkbook workbook = application.Workbooks.Create(1);
+                IWorksheet worksheet = workbook.Worksheets[0];
+                //worksheet.IsGridLinesVisible = false;
+                worksheet.ImportData(data, 1, 1, true);
+
+                workbook.SaveAs("Impressos/CONSULTA_GERENCIAL.xlsx");
+                Process.Start(new ProcessStartInfo("Impressos\\CONSULTA_GERENCIAL.xlsx")
+                {
+                    UseShellExecute = true
+                });
+
+                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+            }
+            catch (Exception ex)
+            {
+                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+                MessageBox.Show(ex.Message);
+            }
         }
 
         private void _mdi_CloseButtonClick(object sender, CloseButtonEventArgs e)
@@ -454,6 +523,41 @@ namespace Compras
         private void _mdi_CloseAllTabs(object sender, CloseTabEventArgs e)
         {
             _mdi.Items.Clear();
+        }
+
+        private void OnAlterarUsuario(object sender, MouseButtonEventArgs e)
+        {
+            Login window = new();
+            window.ShowDialog();
+
+            try
+            {
+                var appSettings = ConfigurationManager.GetSection("appSettings") as NameValueCollection;
+                BaseSettings.Username = appSettings[0];
+                txtUsername.Text = BaseSettings.Username;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        private void Image_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            RadWindow.Prompt(new DialogParameters()
+            {
+                Header = "Ano Sistema",
+                Content = "Alterar o Ano do Sistema",
+                Closed = (object sender, WindowClosedEventArgs e) =>
+                {
+                    if (e.PromptResult != null)
+                    {
+                        BaseSettings.Database = e.PromptResult;
+                        txtDataBase.Text = BaseSettings.Database;
+                        _mdi.Items.Clear();
+                    }
+                }
+            });
         }
     }
 }

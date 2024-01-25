@@ -65,7 +65,7 @@
                 </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <StatusBarItem>
-                <Image Source="/Icones/icons8-usu_0025c3_0025a1rio-de-g_0025c3_0025aanero-neutro-windows-metro-16.png" Width="16" Height="16"/>
+                <Image Source="/Icones/icons8-usu_0025c3_0025a1rio-de-g_0025c3_0025aanero-neutro-windows-metro-16.png" Width="16" Height="16" MouseDown="OnAlterarUsuario"/>
             </StatusBarItem>
             <StatusBarItem Grid.Column="1">
                 <TextBlock x:Name="txtUsername"/>
@@ -74,7 +74,7 @@
                 <syncfusion:SfLinearProgressBar x:Name="PbLoading" Height="20" Progress="80" Width="100" IsIndeterminate="True" Visibility="Hidden"/>
             </StatusBarItem>
             <StatusBarItem Grid.Column="3">
-                <Image Source="/Icones/configuracao-de-dados-windows-metro-16.png" Width="16" Height="16"/>
+                <Image Source="/Icones/configuracao-de-dados-windows-metro-16.png" Width="16" Height="16" MouseDown="Image_MouseDown"/>
             </StatusBarItem>
             <StatusBarItem Grid.Column="4">
                 <TextBlock x:Name="txtDataBase"/>

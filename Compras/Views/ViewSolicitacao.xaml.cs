@@ -1,5 +1,6 @@
 ﻿using Compras.Views.PopUp;
 using Microsoft.EntityFrameworkCore;
+using Syncfusion.Data.Extensions;
 using Syncfusion.Windows.Tools.Controls;
 using System;
 using System.Collections.ObjectModel;
@@ -106,6 +107,8 @@ namespace Compras.Views
                 vm.Planilhas = await Task.Run(vm.RelplansAsync);
                 vm.Status = await Task.Run(vm.GetStatusAsync);
                 vm.Siglas = await Task.Run(vm.GetSiglasAsync);
+                vm.Fases = await Task.Run(vm.GetFasesAsync);
+                vm.Classificacoes = await Task.Run(vm.GetClassificacoesAsync);
                 Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
 
             }
@@ -264,9 +267,9 @@ namespace Compras.Views
                     //setor = Me.Dados_cmbSetor
                     cliente = txtSigla?.Text,
                     data_utilizacao = dtSolicitacao.DateTime,
-                    //etapa = Me.cmbFase
-                    //classificacao = Me.cmbClassificacaoDSL
-                    //descricao_dsl = Me.cmbDescricaoDSL
+                    etapa = cbFase.Text,
+                    classificacao = cbClassificacao.Text,
+                    descricao_dsl = cbDescr.Text,
                     //n_servico = Me.txtNumServico
                     //codcentro_custo = Me.Dados_cmbCentroDeCusto
                     //sugestao_fornecedor = Me.cmbSugestaoFornecedor
@@ -310,6 +313,39 @@ namespace Compras.Views
             }
         }
 
+        private async void OnEditarClick(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
+                SolicitacaoViewModel vm = (SolicitacaoViewModel)DataContext;
+                var item = await Task.Run(() => vm.GetItemTaskAsync(vm.ItemSolicitado.cod_item));
+                item.codcompleadicional = vm.Compledicional.codcompladicional;
+                item.quantidade = double.Parse(txtQuantidade.Text, CultureInfo.GetCultureInfo("pt-BR"));
+                item.cliente = txtSigla?.Text;
+                item.data_utilizacao = dtSolicitacao.DateTime;
+                item.etapa = cbFase.Text;
+                item.classificacao = cbClassificacao.Text;
+                item.descricao_dsl = cbDescr.Text;
+                item.cod_status = vm.Statu.cod_status;
+                item.obs_solicitacao = txtObservacao.Text;
+                item.alterado_por = vm.BaseSettings.Username;
+                item.alterado_em = DateTime.Now;
+                item.solicitante = txtSolicitante.Text;
+                
+                await Task.Run(async () => await vm.EditarItemTaskAsync(item));
+                vm.ItensSolicitado = await Task.Run(async () => await vm.GetItensSolicitadoAsync(vm.SolicitacaoMaterial.cod_solicitacao));
+                Limpar();
+                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+
+            }
+            catch (Exception ex)
+            {
+                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+                MessageBox.Show(ex.Message);
+            }
+        }
+
         private void Limpar()
         {
             SolicitacaoViewModel vm = (SolicitacaoViewModel)DataContext;
@@ -320,6 +356,7 @@ namespace Compras.Views
             vm.DescAdicional = null;
             vm.CompleAdicionais = null;
             vm.Compledicional = null;
+            vm.BaseCustos = null;
             txtQuantidade.Text = null;
             dtSolicitacao.DateTime = null;
             cbStatu.SelectedItem = null;
@@ -329,6 +366,12 @@ namespace Compras.Views
             txtDescricaoAdicional.Text = string.Empty;
             txtComplementoAdicional.Text = string.Empty;
             unidade.Text = string.Empty;
+            txtSolicitante.Text = string.Empty;
+            txtSigla.Text = string.Empty;
+            txtObservacao.Text = string.Empty;
+            cbFase.Text = string.Empty;
+            cbClassificacao.Text = string.Empty;
+            cbDescr.Text = string.Empty;
             idProduto.Focus();
         }
 
@@ -390,7 +433,7 @@ namespace Compras.Views
                 {
                     btnEnviar.IsEnabled = false;
                     btnAdicionar.IsEnabled = false;
-                    //btnEditar.IsEnabled = false;
+                    btnAlterar.IsEnabled = false;
                     btnExcluir.IsEnabled = false;
                     btnApagar.IsEnabled = false;
                     Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
@@ -631,6 +674,78 @@ namespace Compras.Views
             unidade.Text = complemento?.unidade;
             txtQuantidade.Focus();
         }
+
+        private async void OnSelectionChanged(object sender, Syncfusion.UI.Xaml.Grid.GridSelectionChangedEventArgs e)
+        {
+             
+        }
+
+        private async void itensSolicitados_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                //Limpar();
+                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
+                SolicitacaoViewModel vm = (SolicitacaoViewModel)DataContext;
+                var record = vm.ItemSolicitado;
+
+                if (record == null)
+                    return;
+
+                vm.Descricao = await Task.Run(() => vm.GetDescricaoAsync(Dispatcher.Invoke(() => record.tipo), Dispatcher.Invoke(() => record.codcompladicional)));
+                vm.Planilha = (from p in vm.Planilhas where p.planilha == record?.planilha select p).FirstOrDefault();
+                vm.Produtos = await Task.Run(() => vm.GetProdutosAsync(vm?.Planilha?.planilha));
+                vm.Produto = (from p in vm.Produtos where p.codigo == vm.Descricao?.codigo select p).FirstOrDefault();
+                vm.DescAdicionais = await Task.Run(() => vm.GetDescAdicionaisAsync(vm.Descricao?.codigo));
+                vm.DescAdicional = (from d in vm.DescAdicionais where d.coduniadicional == vm.Descricao?.coduniadicional select d).FirstOrDefault();
+                vm.CompleAdicionais = await Task.Run(() => vm.GetCompleAdicionaisAsync(vm.Descricao?.coduniadicional));
+                vm.Compledicional = (from d in vm.CompleAdicionais where d.codcompladicional == vm.Descricao?.codcompladicional select d).FirstOrDefault();
+
+                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+                idProduto.Text = vm.Descricao?.codcompladicional.ToString();
+                txtPlanilha.Text = vm.Planilha?.planilha;
+                txtDescricao.Text = vm.Descricao?.descricao;
+                txtDescricaoAdicional.Text = vm.DescAdicional?.descricao_adicional;
+                txtComplementoAdicional.Text = vm.Compledicional?.complementoadicional;
+                unidade.Text = vm.Compledicional?.unidade;
+                txtQuantidade.Text = record.qtde_solicitacao.ToString(); //double.Parse(txtQuantidade.Text, CultureInfo.GetCultureInfo("pt-BR"))
+
+                dtSolicitacao.DateTime = record.data_utilizacao;
+                cbStatu.SelectedValue = (from p in vm.Status where p.cod_status == record.cod_status select p).FirstOrDefault();
+                txtSolicitante.Text = record.solicitante;
+                txtSigla.Text = record.cliente;
+                txtObservacao.Text = record.obs_solicitacao;
+                cbFase.Text = record.etapa;
+                cbClassificacao.Text = record.classificacao;
+                cbDescr.Text = record.descricao_dsl;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+            }
+        }
+
+
+
+        private async void cbClassificacao_SelectedItemChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            //GetClassificacoesAsync
+            try
+            {
+                SolicitacaoViewModel vm = (SolicitacaoViewModel)DataContext;
+                ClassificacaoModel classificacao = (ClassificacaoModel)e.NewValue;
+                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
+                vm.BaseCustos = await Task.Run(() => vm.GetBaseCustoAsync(classificacao?.classificacao));
+                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+            }
+            catch (Exception ex)
+            {
+                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+                MessageBox.Show(ex.Message);
+            }
+        }
+
     }
 
     public class SolicitacaoViewModel : INotifyPropertyChanged
@@ -776,7 +891,55 @@ namespace Compras.Views
         }
         #endregion
 
-        #region
+        #region Fase
+
+        private ObservableCollection<FaseModel> _fases;
+        public ObservableCollection<FaseModel> Fases
+        {
+            get { return _fases; }
+            set { _fases = value; RaisePropertyChanged("Fases"); }
+        }
+        private FaseModel _fase;
+        public FaseModel Fase
+        {
+            get { return _fase; }
+            set { _fase = value; RaisePropertyChanged("Fase"); }
+        }
+
+        #endregion
+
+        #region Classificação
+
+        private ObservableCollection<ClassificacaoModel> _classificacoes;
+        public ObservableCollection<ClassificacaoModel> Classificacoes
+        {
+            get { return _classificacoes; }
+            set { _classificacoes = value; RaisePropertyChanged("Classificacoes"); }
+        }
+        private ClassificacaoModel _classificacao;
+        public ClassificacaoModel Classificacao
+        {
+            get { return _classificacao; }
+            set { _classificacao = value; RaisePropertyChanged("Classificacao"); }
+        }
+
+        #endregion
+
+        #region Base Custo
+
+        private ObservableCollection<BaseCustoModel> _baseCustos;
+        public ObservableCollection<BaseCustoModel> BaseCustos
+        {
+            get { return _baseCustos; }
+            set { _baseCustos = value; RaisePropertyChanged("BaseCustos"); }
+        }
+        private BaseCustoModel _baseCusto;
+        public BaseCustoModel BaseCusto
+        {
+            get { return _baseCusto; }
+            set { _baseCusto = value; RaisePropertyChanged("BaseCusto"); }
+        }
+
         #endregion
 
         //public SolicitacaoViewModel() { }
@@ -1019,12 +1182,40 @@ namespace Compras.Views
             }
         }
 
+        public async Task<SolicitacaoMaterialItemModel> GetItemTaskAsync(long? id)
+        {
+            try
+            {
+                using DatabaseContext db = new();
+                return await db.SolicitacaoMateriaisItens.FindAsync(id);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
         public async Task<SolicitacaoMaterialItemModel> InserirIntemTaskAsync(SolicitacaoMaterialItemModel item)
         {
             try
             {
                 using DatabaseContext db = new();
                 db.SolicitacaoMateriaisItens.Add(item);
+                await db.SaveChangesAsync();
+                return item;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public async Task<SolicitacaoMaterialItemModel> EditarItemTaskAsync(SolicitacaoMaterialItemModel item)
+        {
+            try
+            {
+                using DatabaseContext db = new();
+                db.SolicitacaoMateriaisItens.Update(item);
                 await db.SaveChangesAsync();
                 return item;
             }
@@ -1070,13 +1261,62 @@ namespace Compras.Views
             }
         }
 
+        public async Task<ObservableCollection<FaseModel>> GetFasesAsync()
+        {
+            try
+            {
+                using DatabaseContext db = new();
+                var data = await db.Fases
+                    .OrderBy(c => c.fase)
+                    .ToListAsync();
+                return new ObservableCollection<FaseModel>(data);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public async Task<ObservableCollection<ClassificacaoModel>> GetClassificacoesAsync()
+        {
+            try
+            {
+                using DatabaseContext db = new();
+                var data = await db.Classificacoes
+                    .OrderBy(c => c.classificacao)
+                    .ToListAsync();
+                return new ObservableCollection<ClassificacaoModel>(data);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public async Task<ObservableCollection<BaseCustoModel>> GetBaseCustoAsync(string classificacao)
+        {
+            try
+            {
+                using DatabaseContext db = new();
+                var data = await db.BaseCustos
+                    .Where(b => b.tipo == classificacao)
+                    .OrderBy(c => c.descr)
+                    .ToListAsync();
+                return new ObservableCollection<BaseCustoModel>(data);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+
 
 
         public event PropertyChangedEventHandler PropertyChanged;
         public void RaisePropertyChanged(string propName)
         {
-            if (PropertyChanged != null)
-                PropertyChanged(this, new PropertyChangedEventArgs(propName));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
         }
 
     }

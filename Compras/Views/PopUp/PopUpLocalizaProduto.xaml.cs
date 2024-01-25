@@ -20,6 +20,12 @@ namespace Compras.Views.PopUp
             this.dataGrid.SearchHelper = new SearchHelperExt(this.dataGrid);
             this.txtBusca.LostFocus += TextBox_LostFocus;
             this.txtBusca.PreviewKeyDown += TextBox_PreviewKeyDown;
+            this.txtBusca.TextChanged += TxtBusca_TextChanged;
+        }
+
+        private void TxtBusca_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            PerformSearch();
         }
 
         private async void UserControl_Loaded(object sender, RoutedEventArgs e)
@@ -60,7 +66,7 @@ namespace Compras.Views.PopUp
 
                 var text = txtBusca.Text;
                 //AllowCaseSensitiveSearch  - true -> improves the performance when search numeric fields.
-                this.dataGrid.SearchHelper.AllowCaseSensitiveSearch = true;
+                this.dataGrid.SearchHelper.AllowCaseSensitiveSearch = false;
                 this.dataGrid.SearchHelper.SearchType = SearchType.Contains;
                 this.dataGrid.SearchHelper.AllowFiltering = true;
                 this.dataGrid.SearchHelper.Search(text);

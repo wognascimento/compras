@@ -8,6 +8,7 @@ namespace Compras
     [Table("qry_solicitacoes_detalhes_itens", Schema = "compras")]
     public class SolicitacaoDetalheItem
     {
+        public long? cod_solicitacao { get; set; }
         public string? almox_recebimento {get; set; }
         public DateTime? data_solicitacao {get; set; }
         public string? inserido_por {get; set; }
@@ -42,5 +43,8 @@ namespace Compras
         public string? aprovado_por {get; set; }
         public DateTime? aprovado_em {get; set; }
         public long? cod_item { get; set; }
+        public bool? finalizado { get; set; }
+        public string? finalizado_por { get; set; }
+        public DateTime? finalizado_em { get; set; }
     }
 }

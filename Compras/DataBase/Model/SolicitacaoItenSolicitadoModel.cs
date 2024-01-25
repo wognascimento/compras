@@ -74,5 +74,6 @@ namespace Compras
         public DateTime? data_entrega {set; get; }
         public DateTime? data_emissao_nf {set; get; }
         public string? origem { set; get; }
+        public string? solicitante { set; get; }
     }
 }

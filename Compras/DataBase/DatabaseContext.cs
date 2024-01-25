@@ -25,13 +25,16 @@ namespace Compras
         public DbSet<FamiliaProdutoModel> FamiliaProdutos { get; set; }
         public DbSet<SolicitacaoDetalheItem> SolicitacaoDetalhes { get; set; }
         public DbSet<EmpresaModel> Empresas { get; set; }
-        
 
         public DbSet<RelplanModel> Planilhas { get; set; }
         public DbSet<ProdutoModel> Produtos { get; set; }
         public DbSet<TabelaDescAdicionalModel> Descricoes { get; set; }
         public DbSet<TblComplementoAdicionalModel> Complementos { get; set; }
         public DbSet<DescricaoProducaoModel> DescricoesProducao { get; set; }
+
+        public DbSet<FaseModel> Fases { get; set; }
+        public DbSet<ClassificacaoModel> Classificacoes { get; set; }
+        public DbSet<BaseCustoModel> BaseCustos { get; set; }
 
         static DatabaseContext() => AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
