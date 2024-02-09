@@ -471,15 +471,6 @@ namespace Compras
 
         private async void OnOpenConsultaGerencial(object sender, RoutedEventArgs e)
         {
-            //ViewConsultaGerencial view = new();
-            //DocumentContainer.SetHeader(view, "CONSULTA GERENCIAL");
-            //DocumentContainer.SetSizetoContentInMDI(view, true);
-            //DocumentContainer.SetMDIBounds(view, new Rect((this._mdi.ActualWidth - 1000.0) / 2.0, (this._mdi.ActualHeight - 700.0) / 2.0, 1000.0, 700.0));
-            //DocumentContainer.SetMDIWindowState(view, MDIWindowState.Maximized);
-            //this._mdi.CanMDIMaximize = true;
-            //this._mdi.Items.Add(view);
-            //adicionarFilho(new ViewConsultaGerencial(), "CONSULTA GERENCIAL", "CONSULTA_GERENCIAL");
-
             try
             {
                 Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
