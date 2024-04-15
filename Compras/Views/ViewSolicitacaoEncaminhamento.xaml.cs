@@ -28,7 +28,8 @@ namespace Compras.Views
     /// </summary>
     public partial class ViewSolicitacaoEncaminhamento : UserControl
     {
-        public ViewSolicitacaoEncaminhamento()
+        private string _tipo;
+        public ViewSolicitacaoEncaminhamento(string tipo)
         {
             InitializeComponent();
             this.DataContext = new SolicitacaoEncaminhadaViewModel();
@@ -37,6 +38,10 @@ namespace Compras.Views
             this.ItensPedido.DragOver += ListView_DragOver;
             this.ItensPedido.PreviewMouseMove += ListView_PreviewMouseMove;
             this.ItensPedido.Drop += ListView_Drop;
+
+            SolicitacaoEncaminhadaViewModel vm = (SolicitacaoEncaminhadaViewModel)DataContext;
+
+            vm.Tipo = tipo;
         }
 
         /// <summary>
@@ -115,6 +120,7 @@ namespace Compras.Views
         /// <param name="e"></param>
         private void ListView_PreviewMouseMove(object sender, MouseEventArgs e)
         {
+            /*
             if (e.LeftButton == MouseButtonState.Pressed)
             {
                 ListBox dragSource = null;
@@ -136,6 +142,7 @@ namespace Compras.Views
 
             }
             e.Handled = true;
+            */
         }
 
         private static object GetDataFromListBox(ListBox source, Point point)
@@ -450,12 +457,21 @@ namespace Compras.Views
             set { pedido = value; RaisePropertyChanged("Pedido"); }
         }
         private ObservableCollection<PedidoModel> pedidos;
+        private List<SolicitacaoEncaminhadaModel> data;
+
         public ObservableCollection<PedidoModel> Pedidos
         {
             get { return pedidos; }
             set { pedidos = value; RaisePropertyChanged("Pedidos"); }
         }
         #endregion
+
+        private string tipo;
+        public string Tipo
+        {
+            get { return tipo; }
+            set { tipo = value; RaisePropertyChanged("Tipo"); }
+        }
 
         public SolicitacaoEncaminhadaViewModel() 
         {
@@ -476,7 +492,12 @@ namespace Compras.Views
             try
             {
                 using DatabaseContext db = new();
-                var data = await db.SolicitacaoEncaminhadas.Where(e => e.tipo != "SERVIÇO" && e.finalizado == false).ToListAsync();
+                List<SolicitacaoEncaminhadaModel> data;
+                if (Tipo != "SERVIÇO")
+                    data = await db.SolicitacaoEncaminhadas.Where(e => e.tipo != "SERVIÇO" && e.finalizado == false).ToListAsync();
+                else
+                    data = await db.SolicitacaoEncaminhadas.Where(e => e.tipo == "SERVIÇO" && e.finalizado == false).ToListAsync();
+
                 return new ObservableCollection<SolicitacaoEncaminhadaModel>(data);
             }
             catch (Exception)
@@ -748,7 +769,7 @@ namespace Compras.Views
                 var item = grid.SelectedItem as SolicitacaoEncaminhadaModel;
                 SolicitacaoEncaminhadaViewModel vm = (SolicitacaoEncaminhadaViewModel)grid.DataContext;
 
-                vm.SolicitacoesEncaminhadas = await Task.Run(vm.GetSolicitacaoEncaminhadasAsync);
+                vm.SolicitacoesEncaminhadas = await Task.Run(() => vm.GetSolicitacaoEncaminhadasAsync());
                 var filteredResult = grid.View.Records.Select(recordentry => recordentry.Data);
                 var itens = grid.View.Records.Count;
 

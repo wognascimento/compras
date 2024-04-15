@@ -39,6 +39,7 @@ namespace Compras
         static DatabaseContext() => AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
+            /*
             optionsBuilder.UseNpgsql(
                 $"host={BaseSettings.Host};" +
                 $"user id={BaseSettings.Username};" +
@@ -46,6 +47,16 @@ namespace Compras
                 $"database={BaseSettings.Database};",
                 options => options.EnableRetryOnFailure()
                 );
+            */
+            optionsBuilder.UseNpgsql(
+                $"host={BaseSettings.Host};" +
+                $"user id={BaseSettings.Username};" +
+                $"password={BaseSettings.Password};" +
+                $"database={BaseSettings.Database};" +
+                $"Application Name=SIG Compras <{BaseSettings.Database}>;",
+                options => { options.EnableRetryOnFailure(); }
+                );
+            optionsBuilder.EnableSensitiveDataLogging();
         }
     }
 }

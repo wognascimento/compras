@@ -207,12 +207,12 @@ namespace Compras
             //this._mdi.CanMDIMaximize = true;
             //this._mdi.Items.Add(view);
 
-            adicionarFilho(new ViewSolicitacaoEncaminhamento(), "ENCAMINHAMENTO SOLICITAÇÃO MATERIAL", "ENCAMINHAMENTO_SOLICITACAO_MATERIAL");
+            adicionarFilho(new ViewSolicitacaoEncaminhamento("MATERIAIS"), "ENCAMINHAMENTO SOLICITAÇÃO MATERIAL", "ENCAMINHAMENTO_SOLICITACAO_MATERIAL");
         }
 
         private void OnOpenEncaminhamentoServico(object sender, RoutedEventArgs e)
         {
-
+            adicionarFilho(new ViewSolicitacaoEncaminhamento("SERVIÇO"), "ENCAMINHAMENTO SOLICITAÇÃO SERVIÇO", "ENCAMINHAMENTO_SOLICITACAO_SERVICO");
         }
 
         private async void OnImportFile(object sender, RoutedEventArgs e)
@@ -357,10 +357,11 @@ namespace Compras
                         var itens =  await InsertProdutoPedido(produtos, _pedido);
                         Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
 
+                        /*
                         string arquivo = Path.GetFileName(filename);
                         string? ano = BaseSettings?.Database?.Remove(0, 2);
                         File.Move($"\\\\192.168.0.1\\compras_{ano}\\PEDIDOS_DE_COMPRAS_{ano}\\ABERTOS_{ano}\\{arquivo}", $"\\\\192.168.0.1\\compras_{ano}\\PEDIDOS_DE_COMPRAS_{ano}\\FINALIZADOS_{ano}\\{arquivo}");
-
+                        */
                         MessageBox.Show("Pedido importado com sucesso e movido para pasta de 'FINALIZADOS'!", "Pedido", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                     }
                     catch (Exception ex)

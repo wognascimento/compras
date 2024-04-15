@@ -1,6 +1,7 @@
 ﻿using Compras.Views.PopUp;
 using Microsoft.EntityFrameworkCore;
 using Syncfusion.Data.Extensions;
+using Syncfusion.Windows.Controls.PivotGrid;
 using Syncfusion.Windows.Tools.Controls;
 using System;
 using System.Collections.ObjectModel;
@@ -360,6 +361,9 @@ namespace Compras.Views
             txtQuantidade.Text = null;
             dtSolicitacao.DateTime = null;
             cbStatu.SelectedItem = null;
+            cbStatu.SelectedItems = null;
+            //cbStatu.SelectedItens = null;
+            cbStatu.Text = null;
             idProduto.Text = null;
             txtPlanilha.Text = string.Empty;
             txtDescricao.Text = string.Empty;
