@@ -551,5 +551,11 @@ namespace Compras
                 }
             });
         }
+
+        private void OnFinalizadas(object sender, RoutedEventArgs e)
+        {
+            adicionarFilho(new ViewSolicitacaoFinalizadas(), "SOLICITAÇÕES FINALIZADAS", "SOLICITACOES_FINALIZADAS");
+            
+        }
     }
 }

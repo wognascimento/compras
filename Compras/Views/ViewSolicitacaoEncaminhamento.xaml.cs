@@ -4,9 +4,7 @@ using Newtonsoft.Json;
 using Syncfusion.UI.Xaml.Grid;
 using Syncfusion.UI.Xaml.ScrollAxis;
 using Syncfusion.UI.Xaml.Utility;
-using Syncfusion.Windows.Controls.Gantt;
 using Syncfusion.XlsIO;
-using Syncfusion.XlsIO.Implementation.Security;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -402,10 +400,7 @@ namespace Compras.Views
                     MessageBox.Show(ex.Message);
                     Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
                 }
-            }
-
-
-            
+            } 
         }
     }
 
@@ -497,6 +492,22 @@ namespace Compras.Views
                     data = await db.SolicitacaoEncaminhadas.Where(e => e.tipo != "SERVIÇO" && e.finalizado == false).ToListAsync();
                 else
                     data = await db.SolicitacaoEncaminhadas.Where(e => e.tipo == "SERVIÇO" && e.finalizado == false).ToListAsync();
+
+                return new ObservableCollection<SolicitacaoEncaminhadaModel>(data);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public async Task<ObservableCollection<SolicitacaoEncaminhadaModel>> GetSolicitacaoFinalizadasAsync()
+        {
+            try
+            {
+                using DatabaseContext db = new();
+                List<SolicitacaoEncaminhadaModel> data;
+                data = await db.SolicitacaoEncaminhadas.Where(e => e.finalizado == true).ToListAsync();
 
                 return new ObservableCollection<SolicitacaoEncaminhadaModel>(data);
             }

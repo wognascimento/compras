@@ -37,6 +37,7 @@
             </syncfusion:MenuItemAdv>
 
             <syncfusion:MenuItemAdv Header="Consultas">
+                <syncfusion:MenuItemAdv Header="Solicitações Finalizadas" Click="OnFinalizadas"/>
                 <syncfusion:MenuItemAdv Header="Gerenciamento" Click="OnOpenConsultaGerencial"/>
                 <syncfusion:MenuItemAdv Header="Todas as Descrições" Click="OnOpenTodasDescricoes"/>
             </syncfusion:MenuItemAdv>
