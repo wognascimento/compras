@@ -275,6 +275,7 @@
             AutoGenerateColumns="False" AllowFiltering="True" AllowResizingColumns="True">
             <syncfusion:SfDataGrid.Columns>
                 <syncfusion:GridNumericColumn HeaderText="ID" MappingName="idfornecedor" ParsingMode="Int" NumberDecimalDigits="0"/>
+                <syncfusion:GridTextColumn HeaderText="CNPJ/CPF" MappingName="cnpj_cpf"/>
                 <syncfusion:GridTextColumn HeaderText="RAZÃO SOCIAL" MappingName="razao_social"/>
                 <syncfusion:GridTextColumn HeaderText="APELIDO" MappingName="nomefantasia"/>
                 <syncfusion:GridTextColumn HeaderText="E-MAIL" MappingName="email"/>
