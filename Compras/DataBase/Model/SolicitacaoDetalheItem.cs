@@ -43,8 +43,10 @@ namespace Compras
         public string? aprovado_por {get; set; }
         public DateTime? aprovado_em {get; set; }
         public long? cod_item { get; set; }
+        public DateTime? data_entrega { get; set; }
         public bool? finalizado { get; set; }
         public string? finalizado_por { get; set; }
         public DateTime? finalizado_em { get; set; }
+        
     }
 }

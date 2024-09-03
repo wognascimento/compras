@@ -217,20 +217,31 @@ namespace Compras
 
         private async void OnImportFile(object sender, RoutedEventArgs e)
         {
-            //\\192.168.0.1\compras_23\PEDIDOS_DE_COMPRAS_23
-            
-            var dir = $"\\\\192.168.0.1\\compras_{ BaseSettings?.Database?.Remove(0,2) }\\";
-            // Configure open file dialog box
-            var dialog = new Microsoft.Win32.OpenFileDialog
-            {
-                FileName = "PEDIDO-COMPRA", // Default file name
-                DefaultExt = ".xlsm", // Default file extension
-                Filter = "Pasta de Trabalho do Excel (.xlsm)|*.xlsm", // Filter files by extension
-                InitialDirectory = $"{dir}PEDIDOS_DE_COMPRAS_{BaseSettings?.Database?.Remove(0, 2)}\\ABERTOS_{BaseSettings?.Database?.Remove(0, 2)}",
-            };
+            Microsoft.Win32.OpenFileDialog dialog = new();
+            bool result = false;
 
-            // Show open file dialog box
-            bool? result = dialog.ShowDialog();
+            try
+            {
+                //\\192.168.0.1\compras_23\PEDIDOS_DE_COMPRAS_23
+                var dir = $"\\\\192.168.0.1\\compras_{BaseSettings?.Database?.Remove(0, 2)}\\";
+                // Configure open file dialog box
+                dialog = new Microsoft.Win32.OpenFileDialog
+                {
+                    FileName = "PEDIDO-COMPRA", // Default file name
+                    DefaultExt = ".xlsm", // Default file extension
+                    Filter = "Pasta de Trabalho do Excel (.xlsm)|*.xlsm", // Filter files by extension
+                    InitialDirectory = $"{dir}PEDIDOS_DE_COMPRAS_{BaseSettings?.Database?.Remove(0, 2)}\\ABERTOS_{BaseSettings?.Database?.Remove(0, 2)}",
+                };
+
+                // Show open file dialog box
+                result = (bool)dialog.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+
+            
 
             // Process open file dialog box results
             if (result == true)
