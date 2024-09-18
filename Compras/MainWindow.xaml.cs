@@ -1,5 +1,6 @@
 ﻿using Compras.Views;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Squirrel;
 using Syncfusion.SfSkinManager;
 using Syncfusion.Windows.Tools.Controls;
@@ -312,7 +313,7 @@ namespace Compras
                         return;
                     }
 
-                    ObservableCollection<PedidoDetalhesModel> produtos = new();
+                    ObservableCollection<PedidoDetalhesModel> produtos = [];
                     for (int i = 12; i < 31; i++)
                     {
                        if (worksheet.Range[$"A{i}"].Value == "" || worksheet.Range[$"A{i}"].Value == "#N/A")
@@ -374,6 +375,11 @@ namespace Compras
                         File.Move($"\\\\192.168.0.1\\compras_{ano}\\PEDIDOS_DE_COMPRAS_{ano}\\ABERTOS_{ano}\\{arquivo}", $"\\\\192.168.0.1\\compras_{ano}\\PEDIDOS_DE_COMPRAS_{ano}\\FINALIZADOS_{ano}\\{arquivo}");
                         */
                         MessageBox.Show("Pedido importado com sucesso e movido para pasta de 'FINALIZADOS'!", "Pedido", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                    }
+                    catch (DbUpdateException ex)
+                    {
+                        Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+                        MessageBox.Show(ex.InnerException.Message);
                     }
                     catch (Exception ex)
                     {
