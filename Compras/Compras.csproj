@@ -53,19 +53,20 @@
 		<PackageReference Include="BrasilAPI" Version="2.1.0" />
 		<PackageReference Include="ClinicalOffice.MvvmTools.WPF.Core" Version="1.3.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.2" />
-		<PackageReference Include="NuGet.CommandLine" Version="6.9.1">
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.10" />
+		<PackageReference Include="NuGet.CommandLine" Version="6.11.1">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Refit" Version="7.0.0" />
-		<PackageReference Include="SharpCompress" Version="0.36.0" />
+		<PackageReference Include="Refit" Version="7.2.1" />
+		<PackageReference Include="SharpCompress" Version="0.38.0" />
 		<PackageReference Include="squirrel.windows" Version="1.9.0" />
-		<PackageReference Include="syncfusion.ui.wpf.net" Version="24.1.47" />
+		<PackageReference Include="syncfusion.ui.wpf.net" Version="27.1.55" />
 		<PackageReference Include="System.Net.Http" Version="4.3.4" />
+		<PackageReference Include="System.Text.Json" Version="8.0.5" />
 		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
 		<PackageReference Include="Telerik.UI.for.Wpf.70.Xaml" Version="2023.2.718" />
-		<PackageReference Include="Z.EntityFramework.Extensions.EFCore" Version="8.102.2" />
+		<PackageReference Include="Z.EntityFramework.Extensions.EFCore" Version="8.103.6" />
 	</ItemGroup>
 
 
