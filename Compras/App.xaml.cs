@@ -15,7 +15,7 @@ namespace Compras
 
             DataBaseSettings BaseSettings = DataBaseSettings.Instance;
             BaseSettings.Database = DateTime.Now.Month >= 4 ? DateTime.Now.Year.ToString() : DateTime.Now.Year-1+"";
-            BaseSettings.Host = "postgresql-server";
+            BaseSettings.Host = "192.168.0.23";
             BaseSettings.Username = Environment.UserName;
             BaseSettings.Password = "123mudar";
         }
