@@ -14,6 +14,7 @@ namespace Compras
         public string? descricao_completa  { get; set; }
         public string? unidade  { get; set; }
         public double? quantidade  { get; set; }
+        public double? preco  { get; set; }
         public string? itens { get; set; }
     }
 }

@@ -230,6 +230,7 @@ namespace Compras.Views
                     worksheet.Range[$"A{i + 12}"].Text = item.codcompleadicional.ToString();
                     worksheet.Range[$"B{i + 12}"].Text = item.descricao_completa;
                     worksheet.Range[$"F{i + 12}"].Number = (double)item.quantidade;
+                    worksheet.Range[$"E{i + 12}"].Number = (double)item.preco;
                     worksheet.Range[$"J{i + 12}"].Text = item.itens;
                 }
 
@@ -344,6 +345,7 @@ namespace Compras.Views
                                           descricao_completa = grp.Key.descricao_completa,
                                           unidade = grp.Key.unidade,
                                           quantidade = grp.Sum(t => t.quantidade),
+                                          preco = grp.Sum(t => t.preco),
                                           itens = JsonConvert.SerializeObject((from i in vm.ItensMontarPedido where i.codcompleadicional == grp.Key.codcompleadicional select new { i.cod_item }).ToList())
                                       }).ToList();
                 }

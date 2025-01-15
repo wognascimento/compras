@@ -30,6 +30,7 @@ namespace Compras
         public string? informado_por {get; set; }
         public long? codcompleadicional {get; set; }
         public long? idpedido {get; set; }
+        public string? numero_nf { get; set; }
         public string? tipo {get; set; }
         public string? resp_compra {get; set; }
         public string? status_compra {get; set; }

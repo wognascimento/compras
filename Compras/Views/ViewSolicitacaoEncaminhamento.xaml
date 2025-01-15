@@ -88,6 +88,14 @@
                         NumberGroupSizes="3" 
                         NumberGroupSeparator="."/>
                     <syncfusion:GridNumericColumn 
+                        MappingName="preco" 
+                        HeaderText="preço" 
+                        AllowEditing="True"
+                        NumberDecimalDigits="2"
+                        NumberDecimalSeparator="," 
+                        NumberGroupSizes="3" 
+                        NumberGroupSeparator="."/>
+                    <syncfusion:GridNumericColumn 
                         MappingName="saldo_estoque" 
                         HeaderText="estoque"
                         NumberDecimalDigits="2"
