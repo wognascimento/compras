@@ -90,7 +90,8 @@ namespace Compras.Views
                         planilha = item.planilha,
                         descricao_completa = item.descricao_completa,
                         unidade = item.unidade,
-                        quantidade = item.quantidade_compra
+                        quantidade = item.quantidade_compra,
+                        preco = item.preco,
                     });
 
                 vm.ItensPedido = (from t in vm.ItensMontarPedido
@@ -103,6 +104,7 @@ namespace Compras.Views
                                       descricao_completa = grp.Key.descricao_completa,
                                       unidade = grp.Key.unidade,
                                       quantidade = grp.Sum(t => t.quantidade),
+                                      preco = grp.Sum(t => t.preco),
                                       itens = JsonConvert.SerializeObject((from i in vm.ItensMontarPedido where i.codcompleadicional == grp.Key.codcompleadicional select new { i.cod_item }).ToList())
                                   }).ToList();
 
@@ -670,7 +672,8 @@ namespace Compras.Views
                         planilha = vm.SolicitacaoEncaminhada.planilha,
                         descricao_completa = vm.SolicitacaoEncaminhada.descricao_completa,
                         unidade = vm.SolicitacaoEncaminhada.unidade,
-                        quantidade = vm.SolicitacaoEncaminhada.quantidade_compra
+                        quantidade = vm.SolicitacaoEncaminhada.quantidade_compra,
+                        preco = vm.SolicitacaoEncaminhada.preco,
                     });
 
                 vm.ItensPedido = (from t in vm.ItensMontarPedido
@@ -683,6 +686,7 @@ namespace Compras.Views
                                       descricao_completa = grp.Key.descricao_completa,
                                       unidade = grp.Key.unidade,
                                       quantidade = grp.Sum(t => t.quantidade),
+                                      preco = grp.Sum(t => t.preco), 
                                       itens = JsonConvert.SerializeObject((from i in vm.ItensMontarPedido where i.codcompleadicional == grp.Key.codcompleadicional select new { i.cod_item }).ToList())
                                   }).ToList();
 
