@@ -411,13 +411,18 @@ namespace Compras
                     db.PedidoDetalhes.AddRange(produtos);
                     await db.SaveChangesAsync();
 
-                    db.Pedidos.Update(pedido);
+                    //db.Pedidos.Update(pedido);
+                    var pedidoExistente = await db.Pedidos.FindAsync(pedido.idpedido);
+
+                    if (pedidoExistente != null)
+                        db.Entry(pedidoExistente).CurrentValues.SetValues(pedido);
+
                     await db.SaveChangesAsync();
 
                     transaction.Commit();
  
                 }
-                catch (Exception)
+                catch (DbUpdateException)
                 {
                     transaction.Rollback();
                     throw;
