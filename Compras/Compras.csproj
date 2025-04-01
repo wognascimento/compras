@@ -7,6 +7,7 @@
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ApplicationIcon>Icones\logo-pink.ico</ApplicationIcon>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -104,6 +105,13 @@
 	<ItemGroup>
 		<Folder Include="DataBase\ViewModel\" />
 		<Folder Include="Impressos\" />
+	</ItemGroup>
+
+
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\BibliotecasSIG\BibliotecasSIG\BibliotecasSIG.csproj" />
+	  <ProjectReference Include="..\..\Update\Update.csproj" />
 	</ItemGroup>
 
 	<PropertyGroup>
