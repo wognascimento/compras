@@ -224,7 +224,8 @@ namespace Compras
             try
             {
                 //\\192.168.0.1\compras_23\PEDIDOS_DE_COMPRAS_23
-                var dir = $"\\\\192.168.0.1\\compras_{BaseSettings?.Database?.Remove(0, 2)}\\";
+                //var dir = $"\\\\192.168.0.1\\compras_{BaseSettings?.Database?.Remove(0, 2)}\\";
+                var dir = $"\\\\192.168.0.4\\anual\\20{BaseSettings?.Database?.Remove(0, 2)}\\"; //\\192.168.0.4\anual\2025
                 // Configure open file dialog box
                 dialog = new Microsoft.Win32.OpenFileDialog
                 {
@@ -354,6 +355,7 @@ namespace Compras
                         var _pedido = new PedidoModel 
                         {
                             idpedido = long.Parse(pedido), 
+                            datapedido = DateTime.Parse(PedidoDt),
                             codempresa = long.Parse(empresa),
                             codfornecedor= long.Parse(fornecedor),
                             id_cond_pagamento= long.Parse(condicoes),
