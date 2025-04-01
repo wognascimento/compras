@@ -7,7 +7,11 @@
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ApplicationIcon>Icones\logo-pink.ico</ApplicationIcon>
+
+		<!-- Configurações de versão -->
+		<Version>1.0.0</Version>
 		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<FileVersion>1.0.0.0</FileVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -114,14 +118,7 @@
 	  <ProjectReference Include="..\..\Update\Update.csproj" />
 	</ItemGroup>
 
-	<PropertyGroup>
-		<NugetTools>$(PkgNuGet_CommandLine)\tools</NugetTools>
-		<SquirrelTools>$(Pkgsquirrel_windows)\tools</SquirrelTools>
 
-		<Version>1.0.0</Version>
-
-		<NuspecFile>$(SolutionDir)Compras\Compras.nuspec</NuspecFile>
-	</PropertyGroup>
 
 	
 
