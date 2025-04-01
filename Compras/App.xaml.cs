@@ -80,10 +80,10 @@ namespace Compras
                         var options = new JsonSerializerOptions { WriteIndented = true };
                         string jsonString = JsonSerializer.Serialize(updateInfo, options);
 
-                        //Process.Start("Update.exe", @$"{updateInfoJson}, CentralSIG.exe");
+                        //Process.Start("Update.exe", @$"{updateInfoJson}, Compras.exe");
 
                         string jsonData = JsonSerializer.Serialize(updateInfo); // Garante que o JSON está bem formatado
-                        string appName = "CentralSIG.exe";
+                        string appName = "Compras.exe";
 
                         string arguments = $"\"{jsonData.Replace("\"", "\\\"")}\" \"{appName}\"";
                         Process.Start("Update.exe", arguments);
