@@ -232,7 +232,7 @@ namespace Compras
                     FileName = "PEDIDO-COMPRA", // Default file name
                     DefaultExt = ".xlsm", // Default file extension
                     Filter = "Pasta de Trabalho do Excel (.xlsm)|*.xlsm", // Filter files by extension
-                    InitialDirectory = $"{dir}PEDIDOS_DE_COMPRAS_{BaseSettings?.Database?.Remove(0, 2)}\\ABERTOS_{BaseSettings?.Database?.Remove(0, 2)}",
+                    //InitialDirectory = $"{dir}PEDIDOS_DE_COMPRAS_{BaseSettings?.Database?.Remove(0, 2)}\\ABERTOS_{BaseSettings?.Database?.Remove(0, 2)}",
                 };
 
                 // Show open file dialog box
@@ -515,8 +515,8 @@ namespace Compras
                 //worksheet.IsGridLinesVisible = false;
                 worksheet.ImportData(data, 1, 1, true);
 
-                workbook.SaveAs("Impressos/CONSULTA_GERENCIAL.xlsx");
-                Process.Start(new ProcessStartInfo("Impressos\\CONSULTA_GERENCIAL.xlsx")
+                workbook.SaveAs(@$"C:\SIG\Compras S.I.G.\Impressos\CONSULTA_GERENCIAL.xlsx");
+                Process.Start(new ProcessStartInfo(@$"C:\SIG\Compras S.I.G.\Impressos\CONSULTA_GERENCIAL.xlsx")
                 {
                     UseShellExecute = true
                 });

@@ -257,9 +257,11 @@ namespace Compras.Views
                 IName lnameEmpresas = worksheet.Names.Add("empresas");
                 lnameEmpresas.RefersToRange = worksheet.Range["empresas!$2:$1048576"];
 
-                workbook.SaveAs($"PEDIDO-COMPRA-{vm.Pedido.idpedido}.xlsm");
+                //Process.Start("explorer", @$"C:\SIG\Compras S.I.G.\Impressos\PEDIDO-COMPRA-{vm.Pedido.idpedido}.xlsm");
 
-                Process.Start(new ProcessStartInfo($"PEDIDO-COMPRA-{vm.Pedido.idpedido}.xlsm")
+                workbook.SaveAs(@$"C:\SIG\Compras S.I.G.\Impressos\PEDIDO-COMPRA-{vm.Pedido.idpedido}.xlsm"); //Impressos
+
+                Process.Start(new ProcessStartInfo(@$"C:\SIG\Compras S.I.G.\Impressos\PEDIDO-COMPRA-{vm.Pedido.idpedido}.xlsm")
                 {
                     UseShellExecute = true
                 });
@@ -745,14 +747,14 @@ namespace Compras.Views
 
                 worksheet.ImportData(filteredResult, importDataOptions);
                 worksheet.UsedRange.AutofitColumns();
-                workbook.SaveAs($"{arquivo}.xlsx");
+                workbook.SaveAs(@$"C:\SIG\Compras S.I.G.\Impressos\{arquivo}.xlsx"); //@$"C:\SIG\Compras S.I.G.\Impressos\
                 workbook.Close();
                 excelEngine.Dispose();
 
 
                 Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
 
-                Process.Start(new ProcessStartInfo($"{arquivo}.xlsx")
+                Process.Start(new ProcessStartInfo(@$"C:\SIG\Compras S.I.G.\Impressos\{arquivo}.xlsx")
                 {
                     UseShellExecute = true
                 });
