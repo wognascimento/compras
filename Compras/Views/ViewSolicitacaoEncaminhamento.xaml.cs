@@ -216,7 +216,7 @@ namespace Compras.Views
                 using ExcelEngine excelEngine = new ExcelEngine();
                 IApplication application = excelEngine.Excel;
                 application.DefaultVersion = ExcelVersion.Xlsx;
-                IWorkbook workbook = excelEngine.Excel.Workbooks.Open("Modelos/PEDIDO-COMPRA.xlsm", ExcelParseOptions.Default, false, "1@3mudar");
+                IWorkbook workbook = excelEngine.Excel.Workbooks.Open(@$"C:\SIG\Compras S.I.G.\Modelos\PEDIDO-COMPRA.xlsm", ExcelParseOptions.Default, false, "1@3mudar");
                 IWorksheet worksheet = workbook.Worksheets[0];
 
                 Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
