@@ -1,4 +1,7 @@
-﻿using Compras.Views;
+﻿using Compras.DataBase.DTOs;
+using Compras.DataBase.Model;
+using Compras.Views;
+using Dapper;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Squirrel;
@@ -10,7 +13,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Configuration;
 using System.Diagnostics;
-using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -337,6 +340,7 @@ namespace Compras
                         var codcompladicional = worksheet.Range[$"A{i}"].Value;
                         var obs = worksheet.Range[$"I{i}"].Value;
                         var itens = worksheet.Range[$"J{i}"].Value;
+
                         produtos.Add(
                             new PedidoDetalhesModel
                             {
@@ -352,6 +356,17 @@ namespace Compras
 
                     try
                     {
+                        var parcelas = await new DatabaseContext().CondicaoPagamentoParcelas
+                            .Where(x => x.id_cond_pagamento == long.Parse(condicoes) && (x.numero_dias == null || x.numero_dias == 0))
+                            .ToListAsync();
+
+                        if (parcelas.Count > 0)
+                        {
+                            MessageBox.Show("Condições de pagamento não possui parcelas cadastradas", "Valiação de Dados");
+                            Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+                            return;
+                        }
+
                         var _pedido = new PedidoModel 
                         {
                             idpedido = long.Parse(pedido), 
@@ -410,7 +425,20 @@ namespace Compras
                 using var transaction = db.Database.BeginTransaction();
                 try
                 {
-                    db.PedidoDetalhes.AddRange(produtos);
+                    //db.PedidoDetalhes.AddRange(produtos);
+                    foreach (var item in produtos)
+                    {
+                        var detPedidoExistente = await db.PedidoDetalhes.FirstOrDefaultAsync(f => f.idpedido == item.idpedido && f.codcompladicional == item.codcompladicional);
+                        if (detPedidoExistente == null)
+                            db.PedidoDetalhes.Add(item);
+                        else
+                        {
+                            detPedidoExistente.qtde = item.qtde;
+                            detPedidoExistente.vlrunit = item.vlrunit;
+                            db.Entry(detPedidoExistente).State = EntityState.Modified;
+                        }
+                            
+                    }
                     await db.SaveChangesAsync();
 
                     //db.Pedidos.Update(pedido);
@@ -418,6 +446,72 @@ namespace Compras
 
                     if (pedidoExistente != null)
                         db.Entry(pedidoExistente).CurrentValues.SetValues(pedido);
+
+                    await db.SaveChangesAsync();
+
+                    await db.FinanceiroFluxos
+                        .Where(f => f.id_compras == pedido.idpedido)
+                        .ExecuteUpdateAsync(f => f
+                            .SetProperty(p => p.debito, 0)
+                            .SetProperty(p => p.valor_previsto, 0));
+
+                    using var connection = new NpgsqlConnection(BaseSettings.ConnectionString);
+
+                    string sql = @"
+                        SELECT 
+	                        classifica_cipo, 
+	                        CASE 
+		                        WHEN exporta_totvs_tipo_pedido.tipo = 'SERVIÇO' THEN 'CS' 
+	                        ELSE 'CM' END AS classif, 
+	                        'VAR' as tipo,  
+	                        razao_social, 
+	                        Extract('Month' From data_vencimento) ||' - '|| upper(to_char(data_vencimento, 'TMMonth')) as mes, 
+	                        descricao_cond_pagamento,  
+	                        nf, 
+	                        data_vencimento, 
+	                        parcelas, 
+	                        0 as credito, 
+	                        conta, 
+	                        qry_base_fluxo_pedidos_gerados_parcelas.idpedido, 
+	                        'PARC '|| id_parcela || '/'|| num_parcelas As parcela,
+	                        data_emissao_nf, 
+	                        cnpj_cpf
+                        FROM compras.qry_base_fluxo_pedidos_gerados_parcelas
+                        JOIN compras.exporta_totvs_tipo_pedido ON qry_base_fluxo_pedidos_gerados_parcelas.idpedido = exporta_totvs_tipo_pedido.idpedido
+                        WHERE qry_base_fluxo_pedidos_gerados_parcelas.idpedido = @IdPedido; 
+                    ";
+
+                    var result = await connection.QueryAsync<PedidoFluxoDTO>(sql, new { IdPedido = pedido.idpedido });
+                    foreach (var item in result)
+                    {
+                        var fluxoExistente = await db.FinanceiroFluxos.FirstOrDefaultAsync(f => f.id_compras == item.idpedido && f.parcela == item.parcela);
+                        var fluxoNovo = new FinanceiroFluxoModel
+                        {
+                            linha_fluxo = fluxoExistente?.linha_fluxo,
+                            depto = item.classifica_cipo.Trim(),
+                            classif = item.classif,
+                            tipo = item.tipo,
+                            descricao = item.razao_social,
+                            mes = item.mes,
+                            forma_pagto = item.descricao_cond_pagamento,
+                            numero_documento = item.nf,
+                            data_vencimento = item.data_vencimento,
+                            data_pagamento = item.data_vencimento,
+                            debito = item.parcelas,
+                            credito = item.credito,
+                            valor_previsto = item.parcelas,
+                            conta = item.conta,
+                            id_compras = item.idpedido,
+                            parcela = item.parcela,
+                            data_emissao = item.data_emissao_nf,
+                            razao_social = item.razao_social,
+                            cnpj = item.cnpj_cpf
+                        };
+                        if (fluxoExistente == null)
+                            db.FinanceiroFluxos.Add(fluxoNovo);
+                        else
+                            db.Entry(fluxoExistente).CurrentValues.SetValues(fluxoNovo);
+                    }
 
                     await db.SaveChangesAsync();
 

@@ -32,6 +32,8 @@ namespace Compras
         public DbSet<TblComplementoAdicionalModel> Complementos { get; set; }
         public DbSet<DescricaoProducaoModel> DescricoesProducao { get; set; }
 
+        public DbSet<FinanceiroFluxoModel> FinanceiroFluxos { get; set; }
+
         public DbSet<FaseModel> Fases { get; set; }
         public DbSet<ClassificacaoModel> Classificacoes { get; set; }
         public DbSet<BaseCustoModel> BaseCustos { get; set; }

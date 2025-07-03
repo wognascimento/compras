@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Compras
+﻿namespace Compras
 {
     public sealed class DataBaseSettings
     {
@@ -13,6 +7,8 @@ namespace Compras
         public string? Database { get; set; }
         public string? Username { get; set; }
         public string? Password { get; set; }
+        public string? ConnectionString { get; set; }
+        public string CaminhoSistema { get; set; } = $@"C:\SIG\Compras S.I.G\";
         public static DataBaseSettings Instance => DataBaseSettings.instance;
     }
 }

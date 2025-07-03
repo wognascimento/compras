@@ -1,13 +1,11 @@
 ﻿using BibliotecasSIG;
 using System;
 using System.Diagnostics;
-using System.Globalization;
 using System.Net.Http;
 using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Markup;
 
 namespace Compras
 {
@@ -29,6 +27,7 @@ namespace Compras
             BaseSettings.Host = "192.168.0.23";
             BaseSettings.Username = Environment.UserName;
             BaseSettings.Password = "123mudar";
+            BaseSettings.ConnectionString = $"Host={BaseSettings.Host};Database={BaseSettings.Database};Username={BaseSettings.Username};Password={BaseSettings.Password}";
         }
 
 
