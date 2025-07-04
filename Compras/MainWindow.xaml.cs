@@ -609,8 +609,8 @@ namespace Compras
                 //worksheet.IsGridLinesVisible = false;
                 worksheet.ImportData(data, 1, 1, true);
 
-                workbook.SaveAs(@$"C:\SIG\Compras S.I.G.\Impressos\CONSULTA_GERENCIAL.xlsx");
-                Process.Start(new ProcessStartInfo(@$"C:\SIG\Compras S.I.G.\Impressos\CONSULTA_GERENCIAL.xlsx")
+                workbook.SaveAs(@$"{BaseSettings.CaminhoSistema}Impressos\CONSULTA_GERENCIAL.xlsx");
+                Process.Start(new ProcessStartInfo(@$"{BaseSettings.CaminhoSistema}Impressos\CONSULTA_GERENCIAL.xlsx")
                 {
                     UseShellExecute = true
                 });
