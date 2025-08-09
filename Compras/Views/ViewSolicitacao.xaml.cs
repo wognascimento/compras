@@ -36,7 +36,7 @@ namespace Compras.Views
                 var window = new Window();
                 window.Title = "CRIAR NOVA SOLICITAÇÃO";
                 window.Height = 150;
-                window.Width = 400;
+                window.Width = 700;
                 window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 window.WindowStyle = WindowStyle.ToolWindow;
                 window.ResizeMode = ResizeMode.NoResize;
@@ -105,11 +105,12 @@ namespace Compras.Views
             {
                 SolicitacaoViewModel vm = (SolicitacaoViewModel)DataContext;
                 Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
-                vm.Planilhas = await Task.Run(vm.RelplansAsync);
-                vm.Status = await Task.Run(vm.GetStatusAsync);
-                vm.Siglas = await Task.Run(vm.GetSiglasAsync);
-                vm.Fases = await Task.Run(vm.GetFasesAsync);
-                vm.Classificacoes = await Task.Run(vm.GetClassificacoesAsync);
+                vm.Planilhas = await vm.RelplansAsync();
+                vm.Status = await vm.GetStatusAsync();
+                vm.Siglas = await vm.GetSiglasAsync();
+                vm.Fases = await vm.GetFasesAsync();
+                vm.Classificacoes = await vm.GetClassificacoesAsync();
+                vm.Fornecedores = await vm.GetFornecedoresAsync();
                 Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
 
             }
@@ -946,6 +947,23 @@ namespace Compras.Views
 
         #endregion
 
+        #region Fornecedor
+
+        private ObservableCollection<Fornecedor> _fornecedores;
+        public ObservableCollection<Fornecedor> Fornecedores
+        {
+            get { return _fornecedores; }
+            set { _fornecedores = value; RaisePropertyChanged("Fornecedores"); }
+        }
+        private Fornecedor fonecedor;
+        public Fornecedor Fornecedor
+        {
+            get { return fonecedor; }
+            set { fonecedor = value; RaisePropertyChanged("Fornecedor"); }
+        }
+
+        #endregion
+
         //public SolicitacaoViewModel() { }
 
         public async Task<SolicitacaoSolicitanteModel> GetSolicitacaoAsync()
@@ -957,6 +975,20 @@ namespace Compras.Views
                     .Where(b => b.username == BaseSettings.Username)
                     .FirstOrDefaultAsync();
                 return data;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public async Task<ObservableCollection<Fornecedor>> GetFornecedoresAsync()
+        {
+            try
+            {
+                using DatabaseContext db = new();
+                var data = await db.Fornecedores.OrderBy(f => f.nomefantasia).ToListAsync();
+                return new ObservableCollection<Fornecedor>(data);
             }
             catch (Exception)
             {

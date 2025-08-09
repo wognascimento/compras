@@ -10,6 +10,7 @@ namespace Compras
         [Key]
         public long? cod_solicitacao {get; set;}
         public long? cod_solicitante {get; set;}
+        public long? idfornecedor { get; set; }
         public DateTime? data_solicitacao {get; set;}
         public string? almox_recebimento {get; set;}
         public string? status_solicitacao {get; set;}

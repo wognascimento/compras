@@ -71,6 +71,14 @@ namespace Compras.Views
 
 
                 var dados = (from t in vm.ItensMontarPedido where t.cod_item == item.cod_item select t).ToList();
+                var fornecedor = (from t in vm.ItensMontarPedido where t.idfornecedor == item.idfornecedor select t.idfornecedor).FirstOrDefault();
+
+                if(vm.ItensMontarPedido.Count > 0 && fornecedor != item.idfornecedor)
+                {
+                    MessageBox.Show("Não é possível adicionar produtos de fornecedores diferentes no mesmo pedido", "Adicionar Item", MessageBoxButton.OK, MessageBoxImage.Information);
+                    continue;
+                }
+
                 if (dados.Count > 0)
                 {
                     MessageBox.Show("Item já presente no pedido", "Adicionar Item", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -88,6 +96,7 @@ namespace Compras.Views
                     {
                         cod_item = item.cod_item,
                         codcompleadicional = item.codcompleadicional,
+                        idfornecedor = item.idfornecedor,
                         planilha = item.planilha,
                         descricao_completa = item.descricao_completa,
                         unidade = item.unidade,
@@ -95,19 +104,20 @@ namespace Compras.Views
                         preco = item.preco,
                     });
 
-                vm.ItensPedido = (from t in vm.ItensMontarPedido
-                                  group t by new { t.codcompleadicional, t.planilha, t.descricao_completa, t.unidade }
+                vm.ItensPedido = [.. (from t in vm.ItensMontarPedido
+                                  group t by new { t.idfornecedor, t.codcompleadicional, t.planilha, t.descricao_completa, t.unidade }
                                   into grp
                                   select new ItemPedidoFileModel
                                   {
                                       codcompleadicional = grp.Key.codcompleadicional,
+                                      idfornecedor = grp.Key.idfornecedor,
                                       planilha = grp.Key.planilha,
                                       descricao_completa = grp.Key.descricao_completa,
                                       unidade = grp.Key.unidade,
                                       quantidade = grp.Sum(t => t.quantidade),
                                       preco = grp.Sum(t => t.preco),
                                       itens = JsonConvert.SerializeObject((from i in vm.ItensMontarPedido where i.codcompleadicional == grp.Key.codcompleadicional select new { i.cod_item }).ToList())
-                                  }).ToList();
+                                  })];
 
                 this.itensSolicitados.View.Remove(item);
             }
@@ -222,18 +232,21 @@ namespace Compras.Views
 
                 Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
 
-                vm.Pedido = await Task.Run(() => vm.CreatePedido(new PedidoModel { datapedido = DateTime.Now }));
+                var fornecedor = vm.ItensPedido.FirstOrDefault()?.idfornecedor;
+
+                vm.Pedido = await Task.Run(() => vm.CreatePedido(new PedidoModel { datapedido = DateTime.Now, codfornecedor = fornecedor }));
 
                 worksheet.Range[$"E4"].Text = vm.Pedido.idpedido.ToString();
                 worksheet.Range[$"G4"].Text = DateTime.Parse(vm.Pedido.datapedido.ToString()).ToString("dd/MM/yyyy");
+                worksheet.Range[$"C7"].Text = fornecedor == null ? "#N/D" : fornecedor.ToString();
 
                 for (int i = 0; i < vm.ItensPedido.Count; i++)
                 {
                     var item = vm.ItensPedido.ToList()[i];
                     worksheet.Range[$"A{i + 12}"].Text = item.codcompleadicional.ToString();
                     worksheet.Range[$"B{i + 12}"].Text = item.descricao_completa;
-                    worksheet.Range[$"F{i + 12}"].Number = (double)item.quantidade;
-                    worksheet.Range[$"E{i + 12}"].Number = (double)item.preco;
+                    worksheet.Range[$"F{i + 12}"].Number = Convert.ToDouble( item.quantidade );
+                    worksheet.Range[$"E{i + 12}"].Number = Convert.ToDouble( item.preco );
                     worksheet.Range[$"J{i + 12}"].Text = item.itens;
                 }
 
@@ -656,7 +669,16 @@ namespace Compras.Views
             {
                 SolicitacaoEncaminhadaViewModel vm = (SolicitacaoEncaminhadaViewModel)grid.DataContext;
 
+
                 var dados = (from t in vm.ItensMontarPedido where t.cod_item == vm.SolicitacaoEncaminhada.cod_item select t).ToList();
+                var fornecedor = (from t in vm.ItensMontarPedido where t.idfornecedor == item.idfornecedor select t.idfornecedor).FirstOrDefault();
+
+                if (vm.ItensMontarPedido.Count > 0 && fornecedor != item.idfornecedor)
+                {
+                    MessageBox.Show("Não é possível adicionar produtos de fornecedores diferentes no mesmo pedido", "Adicionar Item", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
                 if (dados.Count > 0)
                 {
                     MessageBox.Show("Item já presente no pedido", "Adicionar Item", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -673,6 +695,7 @@ namespace Compras.Views
                     new ItemPedidoFileModel
                     {
                         cod_item = vm.SolicitacaoEncaminhada.cod_item,
+                        idfornecedor = vm.SolicitacaoEncaminhada.idfornecedor,
                         codcompleadicional = vm.SolicitacaoEncaminhada.codcompleadicional,
                         planilha = vm.SolicitacaoEncaminhada.planilha,
                         descricao_completa = vm.SolicitacaoEncaminhada.descricao_completa,
@@ -681,20 +704,22 @@ namespace Compras.Views
                         preco = vm.SolicitacaoEncaminhada.preco,
                     });
 
-                vm.ItensPedido = (from t in vm.ItensMontarPedido
-                                  group t by new { t.codcompleadicional, t.planilha, t.descricao_completa, t.unidade }
+                vm.ItensPedido = [.. (from t in vm.ItensMontarPedido
+                                  group t by new { t.idfornecedor, t.codcompleadicional, t.planilha, t.descricao_completa, t.unidade }
                              into grp
                                   select new ItemPedidoFileModel
                                   {
                                       codcompleadicional = grp.Key.codcompleadicional,
+                                      idfornecedor = grp.Key.idfornecedor,
                                       planilha = grp.Key.planilha,
                                       descricao_completa = grp.Key.descricao_completa,
                                       unidade = grp.Key.unidade,
                                       quantidade = grp.Sum(t => t.quantidade),
                                       preco = grp.Sum(t => t.preco), 
                                       itens = JsonConvert.SerializeObject((from i in vm.ItensMontarPedido where i.codcompleadicional == grp.Key.codcompleadicional select new { i.cod_item }).ToList())
-                                  }).ToList();
+                                  })];
 
+                grid.View.Remove(item);
             }
             catch (Exception ex)
             {

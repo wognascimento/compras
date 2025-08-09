@@ -70,6 +70,7 @@ namespace Compras
         public DateTime? data_emissao_nf {get ; set ; }
         public long? linha_fluxo {get ; set ; }
         public string? nomefantasia {get ; set ; }
+        public long? idfornecedor { get ; set ; }
         public string? orientacao_compra {get ; set ; }
         public string? orientacao_roteiro { get ; set ; }
         public string? solicitante { get ; set ; }

@@ -47,8 +47,6 @@
                         <MenuItem Command="{Binding Source={x:Static Member=local:ContextMenuCommands.AddPedido}}"
                               CommandParameter="{Binding}"
                               Header="Adicionar ao Pedido."/>
-
-
                     </ContextMenu>
                 </syncfusion:SfDataGrid.RecordContextMenu>
 
@@ -108,6 +106,7 @@
                     <syncfusion:GridTextColumn MappingName="orientacao_roteiro" ColumnSizer="SizeToHeader" AllowEditing="True"/>
                     <syncfusion:GridTextColumn MappingName="solicitante"/>
                     <syncfusion:GridTextColumn MappingName="cliente"/>
+                    <syncfusion:GridTextColumn MappingName="nomefantasia" HeaderText="fornecedor"/>
                     <syncfusion:GridDateTimeColumn MappingName="data_utilizacao" HeaderText="utilização"/>
                     <syncfusion:GridTextColumn MappingName="planilha"/>
                     <syncfusion:GridTextColumn MappingName="resp_compra" HeaderText="compradora(o)"/>

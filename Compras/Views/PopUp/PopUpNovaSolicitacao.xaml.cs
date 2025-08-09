@@ -30,6 +30,7 @@ namespace Compras.Views.PopUp
                 {
                     tipo = (string)tipo.SelectionBoxItem,
                     almox_recebimento = almoxRecebimento.Text,
+                    idfornecedor = cBoxFornecedores.SelectedValue == null ? null : Convert.ToInt64(cBoxFornecedores.SelectedValue),
                     //cod_solicitante = Solicitante.cod_solicitante,
                     data_solicitacao = DateTime.Now
                 };

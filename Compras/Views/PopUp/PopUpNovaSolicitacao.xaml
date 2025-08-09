@@ -10,8 +10,9 @@
 
     <Grid Margin="5,5,5,5">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition/>
-            <ColumnDefinition/>
+            <ColumnDefinition Width="150"/>
+            <ColumnDefinition Width="400"/>
+            <ColumnDefinition Width="100"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -26,8 +27,9 @@
             ContainerType="Outlined" 
             Hint="Tipo" 
             Grid.Row="0"
-            Grid.Column="0" Margin="0,0,5,0">
-            <ComboBox x:Name="tipo" >
+            Grid.Column="0"
+            Margin="0,0,5,0">
+            <ComboBox x:Name="tipo" Height="18">
                 <ComboBoxItem Content="ALMOXARIFADO"/>
                 <ComboBoxItem Content="ESTOQUE"/>
                 <ComboBoxItem Content="SERVIÇO"/>
@@ -40,10 +42,39 @@
             CharCountVisibility="Collapsed"
             HelperTextVisibility="Collapsed"
             ContainerType="Outlined" 
-            Hint="Almoxarifado" 
+            Hint="Fornecedor" 
+            Width="400"
             Grid.Row="0"
             Grid.Column="1">
-            <TextBox x:Name="almoxRecebimento" Text="JACAREÍ"/>
+            <!--
+            <syncfusion:ComboBoxAdv 
+                x:Name="cBoxFornecedores" 
+                Height="18"
+                IsEditable="true"
+                ItemsSource="{Binding Fornecedores}" 
+                AutoCompleteMode="Suggest"
+                DisplayMemberPath="nomefantasia"
+                SelectedValuePath="idfornecedor"/>
+            -->
+
+            <ComboBox 
+                x:Name="cBoxFornecedores" 
+                Height="18"  
+                ItemsSource="{Binding Fornecedores}"
+                DisplayMemberPath="nomefantasia"
+                SelectedValuePath="idfornecedor"/>
+        </syncfusion:SfTextInputLayout>
+
+
+        <syncfusion:SfTextInputLayout 
+            InputViewPadding="5"
+            CharCountVisibility="Collapsed"
+            HelperTextVisibility="Collapsed"
+            ContainerType="Outlined" 
+            Hint="Almoxarifado" 
+            Grid.Row="0"
+            Grid.Column="2" Margin="5,0,0,0">
+            <TextBox x:Name="almoxRecebimento" Height="18" Text="JACAREÍ"/>
         </syncfusion:SfTextInputLayout>
 
 
