@@ -375,12 +375,12 @@ namespace Compras
                             codfornecedor= long.Parse(fornecedor),
                             id_cond_pagamento= long.Parse(condicoes),
                             status = "FINALIZADO", 
-                            status_por = Environment.UserName, 
+                            status_por = BaseSettings.Username, 
                             status_data = DateTime.Now,
                             data_emissao_nf = DateTime.Parse(PedidoDnota),
                             nf = PedidoNnota,
                             dataentrega = DateTime.Parse(PedidoEntrega),
-                            comprador = Environment.UserName,
+                            comprador = BaseSettings.Username,
                         };
 
                         var itens =  await InsertProdutoPedido(produtos, _pedido);

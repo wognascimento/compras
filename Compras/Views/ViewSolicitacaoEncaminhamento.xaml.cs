@@ -405,7 +405,7 @@ namespace Compras.Views
 
             if (column.GetType() == typeof(GridCheckBoxColumn) && column.MappingName == "finalizado")
             {
-                record.finalizado_por = Environment.UserName;
+                record.finalizado_por = BaseSettings.Username;
                 record.finalizado_em = DateTime.Now;
 
                 try

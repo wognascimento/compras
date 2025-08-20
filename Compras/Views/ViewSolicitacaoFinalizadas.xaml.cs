@@ -10,8 +10,12 @@ namespace Compras.Views
     /// <summary>
     /// Interação lógica para ViewSolicitacaoFinalizadas.xam
     /// </summary>
+    /// 
     public partial class ViewSolicitacaoFinalizadas : UserControl
     {
+
+        private DataBaseSettings BaseSettings = DataBaseSettings.Instance;
+
         public ViewSolicitacaoFinalizadas()
         {
             InitializeComponent();
@@ -46,7 +50,7 @@ namespace Compras.Views
 
             if (column.GetType() == typeof(GridCheckBoxColumn) && column.MappingName == "finalizado")
             {
-                record.finalizado_por = Environment.UserName;
+                record.finalizado_por = BaseSettings.Username;
                 record.finalizado_em = DateTime.Now;
 
                 try
