@@ -36,9 +36,11 @@
                 MouseDoubleClick="OnDbClick" 
                 RowValidated="itensSolicitados_RowValidated"
                 SelectionMode="Extended"
+                GridCopyOption="CopyData,IncludeHeaders,IncludeFormat"
                 RowSelectionBrush="Green"
                 ShowRowHeader="True"
-                AllowDraggingRows="True" CurrentCellValueChanged="itensSolicitados_CurrentCellValueChanged">
+                AllowDraggingRows="True" 
+                CurrentCellValueChanged="itensSolicitados_CurrentCellValueChanged">
 
 
                 <syncfusion:SfDataGrid.RecordContextMenu>
@@ -65,21 +67,23 @@
                 
                 <syncfusion:SfDataGrid.Columns>
                     <!--<syncfusion:GridNumericColumn MappingName="cod_item" NumberNegativePattern="0" NumberDecimalDigits="0"/>-->
-                    <syncfusion:GridCheckBoxColumn MappingName="finalizado" AllowEditing="True"/>
-                    <syncfusion:GridDateTimeColumn MappingName="data_informado" HeaderText="data solicitado" Pattern="CustomPattern" CustomPattern="dd/M/yyyy HH:mm:ss"/>
-                    <syncfusion:GridTextColumn MappingName="familia"/>
-                    <syncfusion:GridNumericColumn MappingName="codcompleadicional" ColumnSizer="SizeToCells" ParsingMode="Int" NumberDecimalDigits="0"/>
+                    <syncfusion:GridCheckBoxColumn MappingName="finalizado" AllowEditing="True" ColumnSizer="SizeToCells"/>
+                    <syncfusion:GridDateTimeColumn MappingName="data_informado" HeaderText="data solicitado" Pattern="CustomPattern" CustomPattern="dd/M/yyyy" ColumnSizer="SizeToCells"/>
                     <syncfusion:GridTextColumn MappingName="descricao_completa"/>
                     <syncfusion:GridNumericColumn 
                         MappingName="quantidade" 
                         HeaderText="qtde."
+                        ColumnSizer="SizeToCells"
                         NumberDecimalDigits="2"
                         NumberDecimalSeparator="," 
                         NumberGroupSizes="3" 
                         NumberGroupSeparator="."/>
+                    <syncfusion:GridTextColumn MappingName="unidade" HeaderText="unid." ColumnSizer="SizeToCells"/>
+                    <syncfusion:GridTextColumn MappingName="obs_solicitacao" ColumnSizer="SizeToHeader"/>
                     <syncfusion:GridNumericColumn 
                         MappingName="quantidade_compra" 
                         HeaderText="qtde compra" 
+                        ColumnSizer="SizeToCells"
                         AllowEditing="True"
                         NumberDecimalDigits="2"
                         NumberDecimalSeparator="," 
@@ -87,12 +91,21 @@
                         NumberGroupSeparator="."/>
                     <syncfusion:GridNumericColumn 
                         MappingName="preco" 
+                        ColumnSizer="SizeToHeader"
                         HeaderText="preço" 
                         AllowEditing="True"
                         NumberDecimalDigits="2"
                         NumberDecimalSeparator="," 
                         NumberGroupSizes="3" 
                         NumberGroupSeparator="."/>
+                    <syncfusion:GridTextColumn MappingName="orientacao_compra" ColumnSizer="SizeToHeader" AllowEditing="True"/>
+                    <syncfusion:GridTextColumn MappingName="nomefantasia" HeaderText="fornecedor" ColumnSizer="SizeToHeader"/>
+                    <syncfusion:GridDateTimeColumn MappingName="data_entrega" AllowEditing="True" ColumnSizer="SizeToCells"/>
+                    <syncfusion:GridTextColumn MappingName="solicitante"/>
+                    <syncfusion:GridTextColumn MappingName="cliente"/>
+                    <syncfusion:GridTextColumn MappingName="familia"/>
+                    <syncfusion:GridTextColumn MappingName="orientacao_roteiro" ColumnSizer="SizeToHeader" AllowEditing="True"/>
+                    <syncfusion:GridNumericColumn MappingName="codcompleadicional" ColumnSizer="SizeToCells" ParsingMode="Int" NumberDecimalDigits="0"/>
                     <syncfusion:GridNumericColumn 
                         MappingName="saldo_estoque" 
                         HeaderText="estoque"
@@ -100,19 +113,11 @@
                         NumberDecimalSeparator="," 
                         NumberGroupSizes="3" 
                         NumberGroupSeparator="."/>
-                    <syncfusion:GridTextColumn MappingName="unidade" HeaderText="unid."/>
-                    <syncfusion:GridTextColumn MappingName="obs_solicitacao" ColumnSizer="SizeToHeader"/>
-                    <syncfusion:GridTextColumn MappingName="orientacao_compra" ColumnSizer="SizeToHeader" AllowEditing="True"/>
-                    <syncfusion:GridTextColumn MappingName="orientacao_roteiro" ColumnSizer="SizeToHeader" AllowEditing="True"/>
-                    <syncfusion:GridTextColumn MappingName="solicitante"/>
-                    <syncfusion:GridTextColumn MappingName="cliente"/>
-                    <syncfusion:GridTextColumn MappingName="nomefantasia" HeaderText="fornecedor"/>
                     <syncfusion:GridDateTimeColumn MappingName="data_utilizacao" HeaderText="utilização"/>
                     <syncfusion:GridTextColumn MappingName="planilha"/>
                     <syncfusion:GridTextColumn MappingName="resp_compra" HeaderText="compradora(o)"/>
                     <syncfusion:GridNumericColumn MappingName="cod_solicitacao" NumberNegativePattern="0" NumberDecimalDigits="0"/>
                     <syncfusion:GridTextColumn MappingName="tipo"/>
-                    <syncfusion:GridDateTimeColumn MappingName="data_entrega" AllowEditing="True"/>
                     <syncfusion:GridTextColumn MappingName="username" HeaderText="inserido_por"/>
                 </syncfusion:SfDataGrid.Columns>
             </syncfusion:SfDataGrid>
