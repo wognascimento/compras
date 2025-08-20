@@ -1,9 +1,8 @@
-﻿using System.DirectoryServices;
-using System;
-using Telerik.Windows.Controls;
-using System.Windows;
+﻿using System;
 using System.Configuration;
-using System.Collections.Specialized;
+using System.DirectoryServices.AccountManagement;
+using System.Windows;
+using Telerik.Windows.Controls;
 
 namespace Compras
 {
@@ -12,61 +11,46 @@ namespace Compras
     /// </summary>
     public partial class Login : RadWindow
     {
+        DataBaseSettings BaseSettings = DataBaseSettings.Instance;
+
         public Login()
         {
             InitializeComponent();
             txtLogin.Focus();
         }
 
-        private void OnSair(object sender, System.Windows.RoutedEventArgs e)
+        private void OnSair(object sender, RoutedEventArgs e)
         {
             this.DialogResult = false;
             this.Close();
         }
 
-        private void OnLogar(object sender, System.Windows.RoutedEventArgs e)
+        private void OnLogar(object sender, RoutedEventArgs e)
         {
 
             if (!string.IsNullOrWhiteSpace(txtLogin.Text) && !string.IsNullOrWhiteSpace(txtSenha.Password))
             {
                 try
                 {
-                    DirectoryEntry directoryEntry = new DirectoryEntry("LDAP://cipodominio.com.br:389", txtLogin.Text, txtSenha.Password);
-                    DirectorySearcher directorySearcher = new DirectorySearcher(directoryEntry);
-                    directorySearcher.Filter = "(SAMAccountName=" + txtLogin.Text + ")";
-                    SearchResult searchResult = directorySearcher.FindOne();
-                    //if ((Int32)searchResult.Properties["userAccountControl"][0] == 512)
-                    //{
+                    // ContextType.Domain já usa seu domínio padrão ou especifique "cipodominio.com.br"
+                    using var ctx = new PrincipalContext(
+                           ContextType.Domain,
+                           "cipodominio.com.br");
+                    if (!ctx.ValidateCredentials(txtLogin.Text, txtSenha.Password))
+                        throw new Exception("Credenciais inválidas.");
 
-                        //var appSettings = ConfigurationManager.GetSection("appSettings") as NameValueCollection;
-                        //ConfigurationManager.AppSettings["Username"] = txtLogin.Text;
-                        /*
-                        Configuration config = ConfigurationManager.OpenExeConfiguration("Producao.dll.config");
-                        config.AppSettings.Settings["Username"].Value = txtLogin.Text;
-                        config.Save(ConfigurationSaveMode.Modified);
-                        ConfigurationManager.RefreshSection("appSettings");
-                        */
+                    // Atualiza config e fecha
+                    var config = ConfigurationManager.OpenExeConfiguration(@$"{BaseSettings.CaminhoSistema}Compras.dll");
+                    config.AppSettings.Settings["Username"].Value = txtLogin.Text;
+                    config.Save(ConfigurationSaveMode.Modified);
+                    ConfigurationManager.RefreshSection("appSettings");
 
-                        Configuration config = ConfigurationManager.OpenExeConfiguration("Producao.dll");
-
-                        //config.AppSettings.SectionInformation.ConfigSource = "app.config";
-
-                        config.AppSettings.Settings["Username"].Value = txtLogin.Text;
-                        config.Save(ConfigurationSaveMode.Modified);
-
-                        ConfigurationManager.RefreshSection("appSettings");
-
-                        this.DialogResult = true;
-                        this.Close();
-                    //}
-                    //else
-                    //{
-                    //    MessageBox.Show("ERRO: Usuário/Senha Inválido!");
-                    //}
+                    this.DialogResult = true;
+                    this.Close();
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    MessageBox.Show("Usuário não encontrado!");
+                    MessageBox.Show($"Falha na autenticação: {ex.Message}");
                 }
             }
         }
