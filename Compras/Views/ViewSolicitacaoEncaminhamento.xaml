@@ -103,6 +103,7 @@
                     <syncfusion:GridDateTimeColumn MappingName="data_entrega" AllowEditing="True" ColumnSizer="SizeToCells"/>
                     <syncfusion:GridTextColumn MappingName="solicitante"/>
                     <syncfusion:GridTextColumn MappingName="cliente"/>
+                    <syncfusion:GridDateTimeColumn MappingName="data_de_expedicao" HeaderText="expedição"/>
                     <syncfusion:GridTextColumn MappingName="familia"/>
                     <syncfusion:GridTextColumn MappingName="orientacao_roteiro" ColumnSizer="SizeToHeader" AllowEditing="True"/>
                     <syncfusion:GridNumericColumn MappingName="codcompleadicional" ColumnSizer="SizeToCells" ParsingMode="Int" NumberDecimalDigits="0"/>
