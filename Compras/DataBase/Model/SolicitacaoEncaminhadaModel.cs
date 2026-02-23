@@ -52,6 +52,7 @@ namespace Compras
         public double? saldo_estoque {get ; set ; }
         public double? qtde_compra_final {get ; set ; }
         public double? preco {get ; set ; }
+        public double? custo { get ; set ; }
         public string? aprovacao {get ; set ; }
         public double? limite {get ; set ; }
         public string? etapa {get ; set ; }
