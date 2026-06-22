@@ -1,98 +1,151 @@
-﻿using Compras.DataBase.Model;
-using Microsoft.EntityFrameworkCore;
+using Compras.DataBase.Model;
+using Dapper;
 using Newtonsoft.Json;
-using Syncfusion.UI.Xaml.Grid;
-using Syncfusion.UI.Xaml.ScrollAxis;
-using Syncfusion.UI.Xaml.Utility;
+using Npgsql;
 using Syncfusion.XlsIO;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using Telerik.Windows.Controls;
+using Telerik.Windows.Controls.GridView;
 
 namespace Compras.Views
 {
-    /// <summary>
-    /// Interação lógica para ViewSolicitacaoEncaminhamento.xam
-    /// </summary>
     public partial class ViewSolicitacaoEncaminhamento : UserControl
     {
-        DataBaseSettings BaseSettings = DataBaseSettings.Instance;
-        private string _tipo;
+        private readonly DataBaseSettings baseSettings = DataBaseSettings.Instance;
+        private Point? dragStartPoint;
+
         public ViewSolicitacaoEncaminhamento(string tipo)
         {
             InitializeComponent();
-            this.DataContext = new SolicitacaoEncaminhadaViewModel();
-
-            this.itensSolicitados.RowDragDropController = new GridRowDragDropControllerExt();
-            this.ItensPedido.DragOver += ListView_DragOver;
-            this.ItensPedido.PreviewMouseMove += ListView_PreviewMouseMove;
-            this.ItensPedido.Drop += ListView_Drop;
-
-            SolicitacaoEncaminhadaViewModel vm = (SolicitacaoEncaminhadaViewModel)DataContext;
-
-            vm.Tipo = tipo;
+            DataContext = new SolicitacaoEncaminhadaViewModel { Tipo = tipo };
         }
 
-        /// <summary>
-        /// to add the dropped records in the ListView control
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ListView_Drop(object sender, DragEventArgs e)
+        private SolicitacaoEncaminhadaViewModel ViewModel => (SolicitacaoEncaminhadaViewModel)DataContext;
+
+        private async void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
-            SolicitacaoEncaminhadaViewModel vm = (SolicitacaoEncaminhadaViewModel)DataContext;
-            
-            foreach (SolicitacaoEncaminhadaModel item in records)
+            await CarregarSolicitacoesAsync();
+        }
+
+        private async Task CarregarSolicitacoesAsync()
+        {
+            try
             {
-                /*
-                var prod = new ItemPedidoFileModel
+                Mouse.OverrideCursor = Cursors.Wait;
+                var dados = await ViewModel.GetSolicitacaoEncaminhadasAsync();
+                var itensNoPedido = ViewModel.ItensMontarPedido
+                    .Where(i => i.cod_item.HasValue)
+                    .Select(i => i.cod_item!.Value)
+                    .ToHashSet();
+
+                ViewModel.SolicitacoesEncaminhadas = new ObservableCollection<SolicitacaoEncaminhadaModel>(
+                    dados.Where(i => !i.cod_item.HasValue || !itensNoPedido.Contains(i.cod_item.Value)));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Encaminhamento", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
+        }
+
+        private void ItensSolicitados_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            dragStartPoint = IsInsideCheckBox(e.OriginalSource as DependencyObject)
+                ? null
+                : e.GetPosition(itensSolicitados);
+        }
+
+        private void ItensSolicitados_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.LeftButton != MouseButtonState.Pressed || dragStartPoint is null)
+                return;
+
+            var currentPoint = e.GetPosition(itensSolicitados);
+            if (Math.Abs(currentPoint.X - dragStartPoint.Value.X) < SystemParameters.MinimumHorizontalDragDistance &&
+                Math.Abs(currentPoint.Y - dragStartPoint.Value.Y) < SystemParameters.MinimumVerticalDragDistance)
+            {
+                return;
+            }
+
+            var selecionados = itensSolicitados.SelectedItems
+                .OfType<SolicitacaoEncaminhadaModel>()
+                .ToList();
+
+            if (selecionados.Count > 0)
+                DragDrop.DoDragDrop(itensSolicitados, selecionados, DragDropEffects.Move);
+
+            dragStartPoint = null;
+        }
+
+        private static bool IsInsideCheckBox(DependencyObject? element)
+        {
+            while (element != null)
+            {
+                if (element is CheckBox)
+                    return true;
+
+                element = VisualTreeHelper.GetParent(element);
+            }
+
+            return false;
+        }
+
+        private void ItensPedido_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetData(typeof(List<SolicitacaoEncaminhadaModel>)) is List<SolicitacaoEncaminhadaModel> itens)
+                AdicionarAoPedido(itens);
+        }
+
+        private void OnAdicionarSelecionados(object sender, RoutedEventArgs e)
+        {
+            AdicionarAoPedido(itensSolicitados.SelectedItems
+                .OfType<SolicitacaoEncaminhadaModel>()
+                .ToList());
+        }
+
+        private void AdicionarAoPedido(IEnumerable<SolicitacaoEncaminhadaModel> itens)
+        {
+            try
+            {
+                var selecionados = itens
+                    .Where(i => i.cod_item.HasValue)
+                    .DistinctBy(i => i.cod_item)
+                    .ToList();
+
+                if (selecionados.Count == 0)
+                    return;
+
+                if (selecionados.Any(i => i.quantidade_compra is null))
+                    throw new InvalidOperationException("Preencha a quantidade de compra antes de adicionar o item ao pedido.");
+
+                var fornecedorAtual = ViewModel.ItensMontarPedido.FirstOrDefault()?.idfornecedor;
+                var fornecedoresSelecionados = selecionados.Select(i => i.idfornecedor).Distinct().ToList();
+                if (fornecedoresSelecionados.Count > 1 ||
+                    (ViewModel.ItensMontarPedido.Count > 0 && fornecedoresSelecionados.Any(f => f != fornecedorAtual)))
                 {
-                    cod_item = item.cod_item,
-                    codcompleadicional = item.codcompleadicional,
-                    planilha = item.planilha,
-                    descricao_completa = item.descricao_completa,
-                    unidade = item.unidade,
-                    quantidade = item.quantidade,
-                    itens = JsonConvert.SerializeObject((from i in vm.ItensMontarPedido where i.codcompleadicional == item.codcompleadicional select new { i.cod_item }).ToList())
-                };
-                this.itensSolicitados.View.Remove(item);
-                ((SolicitacaoEncaminhadaViewModel)DataContext).ItensPedido.Add(prod);
-                */
-
-
-                var dados = (from t in vm.ItensMontarPedido where t.cod_item == item.cod_item select t).ToList();
-                var fornecedor = (from t in vm.ItensMontarPedido where t.idfornecedor == item.idfornecedor select t.idfornecedor).FirstOrDefault();
-
-                if(vm.ItensMontarPedido.Count > 0 && fornecedor != item.idfornecedor)
-                {
-                    MessageBox.Show("Não é possível adicionar produtos de fornecedores diferentes no mesmo pedido", "Adicionar Item", MessageBoxButton.OK, MessageBoxImage.Information);
-                    continue;
+                    throw new InvalidOperationException("Não é possível adicionar produtos de fornecedores diferentes no mesmo pedido.");
                 }
 
-                if (dados.Count > 0)
+                foreach (var item in selecionados)
                 {
-                    MessageBox.Show("Item já presente no pedido", "Adicionar Item", MessageBoxButton.OK, MessageBoxImage.Information);
-                    continue;
-                }
+                    if (ViewModel.ItensMontarPedido.Any(i => i.cod_item == item.cod_item))
+                        continue;
 
-                if (item?.quantidade_compra == null)
-                {
-                    MessageBox.Show("Quantidade de compras esta em branco", "Adicionar Item", MessageBoxButton.OK, MessageBoxImage.Information);
-                    continue;
-                }
-
-                vm.ItensMontarPedido.Add(
-                    new ItemPedidoFileModel
+                    ViewModel.ItensMontarPedido.Add(new ItemPedidoFileModel
                     {
                         cod_item = item.cod_item,
                         codcompleadicional = item.codcompleadicional,
@@ -101,835 +154,367 @@ namespace Compras.Views
                         descricao_completa = item.descricao_completa,
                         unidade = item.unidade,
                         quantidade = item.quantidade_compra,
-                        preco = item.preco,
+                        preco = item.preco
                     });
 
-                vm.ItensPedido = [.. (from t in vm.ItensMontarPedido
-                                  group t by new { t.idfornecedor, t.codcompleadicional, t.planilha, t.descricao_completa, t.unidade }
-                                  into grp
-                                  select new ItemPedidoFileModel
-                                  {
-                                      codcompleadicional = grp.Key.codcompleadicional,
-                                      idfornecedor = grp.Key.idfornecedor,
-                                      planilha = grp.Key.planilha,
-                                      descricao_completa = grp.Key.descricao_completa,
-                                      unidade = grp.Key.unidade,
-                                      quantidade = grp.Sum(t => t.quantidade),
-                                      preco = grp.Sum(t => t.preco),
-                                      itens = JsonConvert.SerializeObject((from i in vm.ItensMontarPedido where i.codcompleadicional == grp.Key.codcompleadicional select new { i.cod_item }).ToList())
-                                  })];
-
-                this.itensSolicitados.View.Remove(item);
-            }
-            
-        }
-
-        /// <summary>
-        /// to select and dragged the record from ListView to other control
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ListView_PreviewMouseMove(object sender, MouseEventArgs e)
-        {
-            /*
-            if (e.LeftButton == MouseButtonState.Pressed)
-            {
-                ListBox dragSource = null;
-                var records = new ObservableCollection<object>();
-                ListBox parent = (ListBox)sender;
-                dragSource = parent;
-                object data = GetDataFromListBox(dragSource, e.GetPosition(parent));
-
-                records.Add(data);
-
-                var dataObject = new DataObject();
-                dataObject.SetData("ListViewRecords", records);
-                dataObject.SetData("ListView", ItensPedido);
-
-                if (data != null)
-                {
-                    DragDrop.DoDragDrop(parent, dataObject, DragDropEffects.Move);
+                    ViewModel.SolicitacoesEncaminhadas.Remove(item);
                 }
 
-            }
-            e.Handled = true;
-            */
-        }
-
-        private static object GetDataFromListBox(ListBox source, Point point)
-        {
-            UIElement element = source.InputHitTest(point) as UIElement;
-            if (element != null)
-            {
-                object data = DependencyProperty.UnsetValue;
-                while (data == DependencyProperty.UnsetValue)
-                {
-                    data = source.ItemContainerGenerator.ItemFromContainer(element);
-                    if (data == DependencyProperty.UnsetValue)
-                    {
-                        element = VisualTreeHelper.GetParent(element) as UIElement;
-                    }
-                    if (element == source)
-                    {
-                        return null;
-                    }
-                }
-                if (data != DependencyProperty.UnsetValue)
-                {
-                    return data;
-                }
-            }
-            return null;
-        }
-        //[0] = {Compras.SolicitacaoEncaminhadaModel}
-        ObservableCollection<object> records = new ObservableCollection<object>();
-
-        /// <summary>
-        /// to move the dragged items form the ListView control
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ListView_DragOver(object sender, DragEventArgs e)
-        {
-            if (e.Data.GetDataPresent("Records"))
-                records = e.Data.GetData("Records") as ObservableCollection<object>;
-        }
-
-
-        private async void UserControl_Loaded(object sender, RoutedEventArgs e)
-        {
-            SolicitacaoEncaminhadaViewModel vm = (SolicitacaoEncaminhadaViewModel)DataContext;
-            try
-            {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
-                vm.SolicitacoesEncaminhadas = await Task.Run(vm.GetSolicitacaoEncaminhadasAsync);
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-
+                RecalcularPedido();
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+                MessageBox.Show(ex.Message, "Adicionar ao pedido", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private async void OnRemoverSelecionados(object sender, RoutedEventArgs e)
+        {
+            var selecionados = ItensPedido.SelectedItems.OfType<ItemPedidoFileModel>().ToList();
+            foreach (var agrupado in selecionados)
+            {
+                var origens = ViewModel.ItensMontarPedido
+                    .Where(i => i.idfornecedor == agrupado.idfornecedor &&
+                                i.codcompleadicional == agrupado.codcompleadicional)
+                    .ToList();
+
+                foreach (var origem in origens)
+                    ViewModel.ItensMontarPedido.Remove(origem);
+            }
+
+            RecalcularPedido();
+            await CarregarSolicitacoesAsync();
+        }
+
+        private async void OnLimparPedido(object sender, RoutedEventArgs e)
+        {
+            ViewModel.ItensMontarPedido.Clear();
+            ViewModel.ItensPedido = [];
+            await CarregarSolicitacoesAsync();
+        }
+
+        private async void OnAtualizar(object sender, RoutedEventArgs e)
+        {
+            await CarregarSolicitacoesAsync();
+        }
+
+        private void RecalcularPedido()
+        {
+            ViewModel.ItensPedido = new ObservableCollection<ItemPedidoFileModel>(
+                ViewModel.ItensMontarPedido
+                    .GroupBy(i => new
+                    {
+                        i.idfornecedor,
+                        i.codcompleadicional,
+                        i.planilha,
+                        i.descricao_completa,
+                        i.unidade
+                    })
+                    .Select(grupo => new ItemPedidoFileModel
+                    {
+                        idfornecedor = grupo.Key.idfornecedor,
+                        codcompleadicional = grupo.Key.codcompleadicional,
+                        planilha = grupo.Key.planilha,
+                        descricao_completa = grupo.Key.descricao_completa,
+                        unidade = grupo.Key.unidade,
+                        quantidade = grupo.Sum(i => i.quantidade),
+                        preco = grupo.Sum(i => i.preco),
+                        itens = JsonConvert.SerializeObject(grupo
+                            .Where(i => i.cod_item.HasValue)
+                            .Select(i => new { cod_item = i.cod_item }))
+                    }));
+        }
+
+        private async void ItensSolicitados_RowEditEnded(object sender, GridViewRowEditEndedEventArgs e)
+        {
+            if (e.EditAction != GridViewEditAction.Commit || e.NewData is not SolicitacaoEncaminhadaModel item)
+                return;
+
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+                if (item.finalizado == true)
+                {
+                    item.finalizado_por = baseSettings.Username;
+                    item.finalizado_em = DateTime.Now;
+                }
+
+                await ViewModel.UpdateSolicitacaoEncaminhadaAsync(item);
+                if (item.finalizado == true)
+                    ViewModel.SolicitacoesEncaminhadas.Remove(item);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Salvar solicitação", MessageBoxButton.OK, MessageBoxImage.Error);
+                await CarregarSolicitacoesAsync();
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
             }
         }
 
         private async void OnCreateFile(object sender, RoutedEventArgs e)
         {
-            SolicitacaoEncaminhadaViewModel vm = (SolicitacaoEncaminhadaViewModel)DataContext;
             try
             {
+                if (ViewModel.ItensPedido.Count == 0)
+                    throw new InvalidOperationException("Não há produtos para criar o pedido.");
 
-                if(vm.ItensPedido == null)
+                Mouse.OverrideCursor = Cursors.Wait;
+                var caminhoModelo = Path.Combine(baseSettings.CaminhoSistema ?? string.Empty, "Modelos", "PEDIDO-COMPRA.xlsm");
+                if (!File.Exists(caminhoModelo))
+                    throw new FileNotFoundException("O modelo PEDIDO-COMPRA.xlsm não foi encontrado.", caminhoModelo);
+
+                var fornecedor = ViewModel.ItensPedido.FirstOrDefault()?.idfornecedor;
+                ViewModel.Pedido = await ViewModel.CreatePedido(new PedidoModel
                 {
-                    MessageBox.Show("Não tem produtos para criar o arquivo", "Criar Arquivo");
-                    return;
-                }
-                using ExcelEngine excelEngine = new ExcelEngine();
-                IApplication application = excelEngine.Excel;
-                application.DefaultVersion = ExcelVersion.Xlsx;
-                IWorkbook workbook = excelEngine.Excel.Workbooks.Open(@$"{BaseSettings.CaminhoSistema}Modelos\PEDIDO-COMPRA.xlsm", ExcelParseOptions.Default, false, "1@3mudar");
-                IWorksheet worksheet = workbook.Worksheets[0];
-
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
-
-                var fornecedor = vm.ItensPedido.FirstOrDefault()?.idfornecedor;
-
-                vm.Pedido = await Task.Run(() => vm.CreatePedido(new PedidoModel { datapedido = DateTime.Now, codfornecedor = fornecedor }));
-
-                worksheet.Range[$"E4"].Text = vm.Pedido.idpedido.ToString();
-                worksheet.Range[$"G4"].Text = DateTime.Parse(vm.Pedido.datapedido.ToString()).ToString("dd/MM/yyyy");
-                worksheet.Range[$"C7"].Text = fornecedor == null ? "#N/D" : fornecedor.ToString();
-
-                for (int i = 0; i < vm.ItensPedido.Count; i++)
-                {
-                    var item = vm.ItensPedido.ToList()[i];
-                    worksheet.Range[$"A{i + 12}"].Text = item.codcompleadicional.ToString();
-                    worksheet.Range[$"B{i + 12}"].Text = item.descricao_completa;
-                    worksheet.Range[$"F{i + 12}"].Number = Convert.ToDouble( item.quantidade );
-                    worksheet.Range[$"E{i + 12}"].Number = Convert.ToDouble( item.preco );
-                    worksheet.Range[$"J{i + 12}"].Text = item.itens;
-                }
-
-                IWorksheet sheetFornecedores = workbook.Worksheets[1];
-                var fornecedores = await Task.Run(vm.GetFornecedoresAsync);
-                sheetFornecedores.ImportData(fornecedores,1,1,true);
-                //=fornecedores!$2:$1048576
-                IName lnameFornecedores = worksheet.Names.Add("fornecedores");
-                lnameFornecedores.RefersToRange = worksheet.Range["fornecedores!$2:$1048576"];
-
-                IWorksheet sheetCondicoes = workbook.Worksheets[2];
-                var condicoes = await Task.Run(vm.GetCondicoesAsync);
-                sheetCondicoes.ImportData(condicoes, 1, 1, true);
-                //=condicoes!$1:$1048576
-                IName lnameCondicoes = worksheet.Names.Add("condicoes");
-                lnameCondicoes.RefersToRange = worksheet.Range["condicoes!$2:$1048576"];
-
-                IWorksheet sheetEmpresas = workbook.Worksheets[3];
-                var empresas = await Task.Run(vm.GetEmpresasAsync);
-                sheetEmpresas.ImportData(empresas, 1, 1, true);
-                //=empresas!$1:$1048576
-                IName lnameEmpresas = worksheet.Names.Add("empresas");
-                lnameEmpresas.RefersToRange = worksheet.Range["empresas!$2:$1048576"];
-
-                //Process.Start("explorer", @$"{BaseSettings.CaminhoSistema}Impressos\PEDIDO-COMPRA-{vm.Pedido.idpedido}.xlsm");
-
-                workbook.SaveAs(@$"{BaseSettings.CaminhoSistema}Impressos\PEDIDO-COMPRA-{vm.Pedido.idpedido}.xlsm"); //Impressos
-
-                Process.Start(new ProcessStartInfo(@$"{BaseSettings.CaminhoSistema}Impressos\PEDIDO-COMPRA-{vm.Pedido.idpedido}.xlsm")
-                {
-                    UseShellExecute = true
+                    datapedido = DateTime.Now,
+                    codfornecedor = fornecedor
                 });
 
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-            }
-        }
-
-        private void OnDbClick(object sender, MouseButtonEventArgs e)
-        {
-            /*
-            try
-            {
-                SolicitacaoEncaminhadaViewModel vm = (SolicitacaoEncaminhadaViewModel)DataContext;
-
-                var dados = (from t in vm.ItensMontarPedido where t.cod_item == vm.SolicitacaoEncaminhada.cod_item select t).ToList();
-                if (dados.Count > 0)
-                {
-                    MessageBox.Show("Item já presente no pedido", "Adicionar Item", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
-                vm.ItensMontarPedido.Add(
-                    new ItemPedidoFileModel
-                    {
-                        cod_item = vm.SolicitacaoEncaminhada.cod_item,
-                        codcompleadicional = vm.SolicitacaoEncaminhada.codcompleadicional,
-                        planilha = vm.SolicitacaoEncaminhada.planilha,
-                        descricao_completa = vm.SolicitacaoEncaminhada.descricao_completa,
-                        unidade = vm.SolicitacaoEncaminhada.unidade,
-                        quantidade = vm.SolicitacaoEncaminhada.quantidade
-                    });
-
-                vm.ItensPedido = (from t in vm.ItensMontarPedido
-                                  group t by new { t.codcompleadicional, t.planilha, t.descricao_completa, t.unidade }
-                             into grp
-                                  select new ItemPedidoFileModel
-                                  {
-                                      codcompleadicional = grp.Key.codcompleadicional,
-                                      planilha = grp.Key.planilha,
-                                      descricao_completa = grp.Key.descricao_completa,
-                                      unidade = grp.Key.unidade,
-                                      quantidade = grp.Sum(t => t.quantidade),
-                                      itens = JsonConvert.SerializeObject((from i in vm.ItensMontarPedido where i.codcompleadicional == grp.Key.codcompleadicional select new { i.cod_item }).ToList())
-                                  }).ToList();
-
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-            */
-        }
-
-        private void SfDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            
-            try
-            {
-                SolicitacaoEncaminhadaViewModel vm = (SolicitacaoEncaminhadaViewModel)DataContext;
-                ItemPedidoFileModel row = (ItemPedidoFileModel)ItensPedido.SelectedItem;
-
-
-                var confirmacao = MessageBox.Show("Deseja remover o produto do pedido?", "Remover Produto", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-                if (confirmacao == MessageBoxResult.Yes)
-                {
-                    //vm.ItensMontarPedido.Remove((from t in vm.ItensMontarPedido where t.codcompleadicional == row.codcompleadicional select t).FirstOrDefault());
-                    var itens = (from t in vm.ItensMontarPedido where t.codcompleadicional == row.codcompleadicional select t).ToList();
-                    foreach (var item in itens)
-                        vm.ItensMontarPedido.Remove(item);
-
-                    vm.ItensPedido = (from t in vm.ItensMontarPedido
-                                      group t by new { t.codcompleadicional, t.planilha, t.descricao_completa, t.unidade }
-                             into grp
-                                      select new ItemPedidoFileModel
-                                      {
-                                          codcompleadicional = grp.Key.codcompleadicional,
-                                          planilha = grp.Key.planilha,
-                                          descricao_completa = grp.Key.descricao_completa,
-                                          unidade = grp.Key.unidade,
-                                          quantidade = grp.Sum(t => t.quantidade),
-                                          preco = grp.Sum(t => t.preco),
-                                          itens = JsonConvert.SerializeObject((from i in vm.ItensMontarPedido where i.codcompleadicional == grp.Key.codcompleadicional select new { i.cod_item }).ToList())
-                                      }).ToList();
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-            
-        }
-
-        private async void itensSolicitados_RowValidated(object sender, RowValidatedEventArgs e)
-        {
-            try
-            {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
-                SolicitacaoEncaminhadaViewModel vm = (SolicitacaoEncaminhadaViewModel)DataContext;
-                var sfdatagrid = sender as SfDataGrid;
-                //vm.SolicitacaoEncaminhada
-                SolicitacaoEncaminhadaModel data = (SolicitacaoEncaminhadaModel)e.RowData;
-                await Task.Run(() => vm.UpdateSolicitacaoEncaminhadaAsync(data));
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-            }
-            catch (Exception ex)
-            {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-                MessageBox.Show(ex.Message);
-            }
-        }
-
-        private async void itensSolicitados_CurrentCellValueChanged(object sender, CurrentCellValueChangedEventArgs e)
-        {
-            SolicitacaoEncaminhadaViewModel vm = (SolicitacaoEncaminhadaViewModel)DataContext;
-            SfDataGrid? grid = sender as SfDataGrid;
-            int columnindex = grid.ResolveToGridVisibleColumnIndex(e.RowColumnIndex.ColumnIndex);
-            var column = grid.Columns[columnindex];
-            var rowIndex = grid.ResolveToRecordIndex(e.RowColumnIndex.RowIndex);
-            var record = grid.View.Records[rowIndex].Data as SolicitacaoEncaminhadaModel;
-
-            if (column.GetType() == typeof(GridCheckBoxColumn) && column.MappingName == "finalizado")
-            {
-                record.finalizado_por = BaseSettings.Username;
-                record.finalizado_em = DateTime.Now;
-
-                try
-                {
-                    Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
-                    await Task.Run(() => vm.FinalizarItemSolicitadoAsync(record));
-                    vm.SolicitacoesEncaminhadas.Remove(record);
-                    Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message);
-                    Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-                }
-            } 
-        }
-    }
-
-    public class SolicitacaoEncaminhadaViewModel : INotifyPropertyChanged
-    {
-        public DataBaseSettings BaseSettings = DataBaseSettings.Instance;
-
-        #region Solicitação Encaminhada
-        private SolicitacaoEncaminhadaModel solicitacaoEncaminhada;
-        public SolicitacaoEncaminhadaModel SolicitacaoEncaminhada
-        {
-            get { return solicitacaoEncaminhada; }
-            set { solicitacaoEncaminhada = value; RaisePropertyChanged("SolicitacaoEncaminhada"); }
-        }
-        private ObservableCollection<SolicitacaoEncaminhadaModel> solicitacoesEncaminhadas;
-        public ObservableCollection<SolicitacaoEncaminhadaModel> SolicitacoesEncaminhadas
-        {
-            get { return solicitacoesEncaminhadas; }
-            set { solicitacoesEncaminhadas = value; RaisePropertyChanged("SolicitacoesEncaminhadas"); }
-        }
-        #endregion
-
-        #region Solicitação Montar Pedido
-        private ItemPedidoFileModel itemMontarPedido;
-        public ItemPedidoFileModel ItemMontarPedido
-        {
-            get { return itemMontarPedido; }
-            set { itemMontarPedido = value; RaisePropertyChanged("ItemMontarPedido"); }
-        }
-        private ObservableCollection<ItemPedidoFileModel> itensMontarPedido;
-        public ObservableCollection<ItemPedidoFileModel> ItensMontarPedido
-        {
-            get { return itensMontarPedido; }
-            set { itensMontarPedido = value; RaisePropertyChanged("ItensMontarPedido"); }
-        }
-        private ICollection<ItemPedidoFileModel> itensPedido;
-        public ICollection<ItemPedidoFileModel> ItensPedido
-        {
-            get { return itensPedido; }
-            set { itensPedido = value; RaisePropertyChanged("ItensPedido"); }
-        }
-        #endregion
-
-        #region Pedido
-        private PedidoModel pedido;
-        public PedidoModel Pedido
-        {
-            get { return pedido; }
-            set { pedido = value; RaisePropertyChanged("Pedido"); }
-        }
-        private ObservableCollection<PedidoModel> pedidos;
-        private List<SolicitacaoEncaminhadaModel> data;
-
-        public ObservableCollection<PedidoModel> Pedidos
-        {
-            get { return pedidos; }
-            set { pedidos = value; RaisePropertyChanged("Pedidos"); }
-        }
-        #endregion
-
-        private string tipo;
-        public string Tipo
-        {
-            get { return tipo; }
-            set { tipo = value; RaisePropertyChanged("Tipo"); }
-        }
-
-        public SolicitacaoEncaminhadaViewModel() 
-        {
-            this.ItensMontarPedido = new ObservableCollection<ItemPedidoFileModel>();
-            this.ItensPedido = new ObservableCollection<ItemPedidoFileModel>();
-        }
-
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        public void RaisePropertyChanged(string propName)
-        {
-            if (PropertyChanged != null)
-                PropertyChanged(this, new PropertyChangedEventArgs(propName));
-        }
-
-        public async Task<ObservableCollection<SolicitacaoEncaminhadaModel>> GetSolicitacaoEncaminhadasAsync()
-        {
-            try
-            {
-                using DatabaseContext db = new();
-                List<SolicitacaoEncaminhadaModel> data;
-                if (Tipo != "SERVIÇO")
-                    data = await db.SolicitacaoEncaminhadas.Where(e => e.tipo != "SERVIÇO" && e.finalizado == false).ToListAsync();
-                else
-                    data = await db.SolicitacaoEncaminhadas.Where(e => e.tipo == "SERVIÇO" && e.finalizado == false).ToListAsync();
-
-                return new ObservableCollection<SolicitacaoEncaminhadaModel>(data);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        public async Task<ObservableCollection<SolicitacaoEncaminhadaModel>> GetSolicitacaoFinalizadasAsync()
-        {
-            try
-            {
-                using DatabaseContext db = new();
-                List<SolicitacaoEncaminhadaModel> data;
-                data = await db.SolicitacaoEncaminhadas.Where(e => e.finalizado == true).ToListAsync();
-
-                return new ObservableCollection<SolicitacaoEncaminhadaModel>(data);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        public async Task<SolicitacaoEncaminhadaModel> UpdateSolicitacaoEncaminhadaAsync(SolicitacaoEncaminhadaModel solicitacao)
-        {
-            try
-            {
-                using DatabaseContext db = new();
-                await db.SolicitacaoEncaminhadas.SingleUpdateAsync(solicitacao);
-                await db.SaveChangesAsync();
-                return solicitacao;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        public async Task FinalizarItemSolicitadoAsync(SolicitacaoEncaminhadaModel solicitacao)
-        {
-            try
-            {
-                using DatabaseContext db = new();
-
-                var item = await db.SolicitacaoEncaminhadas.FirstOrDefaultAsync(p => p.cod_item == solicitacao.cod_item);
-                if (item != null)
-                {
- 
-                    item.finalizado = solicitacao.finalizado;
-                    db.Entry(item).Property(p => p.finalizado).IsModified = true;
-
-                    item.finalizado_em = solicitacao.finalizado_em;
-                    db.Entry(item).Property(p => p.finalizado_em).IsModified = true;
-
-                    item.finalizado_por = solicitacao.finalizado_por;
-                    db.Entry(item).Property(p => p.finalizado_por).IsModified = true;
-
-                    // Salva apenas a atualização do campo modificado
-                    await db.SaveChangesAsync();
-                }
-
-                //await db.SolicitacaoEncaminhadas.SingleUpdateAsync(solicitacao);
-                //await db.SaveChangesAsync();
-                //return solicitacao;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        public async Task<PedidoModel> CreatePedido(PedidoModel pedido)
-        {
-            try
-            {
-                using DatabaseContext db = new();
-                db.Pedidos.Add(pedido);
-                await db.SaveChangesAsync();
-                return pedido;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        public async Task<ObservableCollection<Fornecedor>> GetFornecedoresAsync()
-        {
-            try
-            {
-                using DatabaseContext db = new();
-                var data = await db.Fornecedores.OrderBy(x => x.nomefantasia).ToListAsync();
-                return new ObservableCollection<Fornecedor>(data);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        public async Task<ObservableCollection<CondicaoPagtoModel>> GetCondicoesAsync()
-        {
-            try
-            {
-                using DatabaseContext db = new();
-                var data = await db.CondicaoPagamentos.OrderBy(x => x.descricao_cond_pagamento).ToListAsync();
-                return new ObservableCollection<CondicaoPagtoModel>(data);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        public async Task<ObservableCollection<EmpresaModel>> GetEmpresasAsync()
-        {
-            try
-            {
-                using DatabaseContext db = new();
-                var data = await db.Empresas.OrderBy(x => x.abreviacao).ToListAsync();
-                return new ObservableCollection<EmpresaModel>(data);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-        
-
-    }
-
-    public static class ContextMenuCommands
-    {
-        private static DataBaseSettings BaseSettings = DataBaseSettings.Instance;
-
-        static BaseCommand? addPedido;
-        public static BaseCommand AddPedido
-        {
-            get
-            {
-                if (addPedido == null)
-                    addPedido = new BaseCommand(OnAdicionarPedidoClicked);
-                return addPedido;
-            }
-        }
-        private static void OnAdicionarPedidoClicked(object obj)
-        {
-            var record = ((GridRecordContextMenuInfo)obj).Record as SolicitacaoEncaminhadaModel;
-            var grid = ((GridRecordContextMenuInfo)obj).DataGrid;
-            var item = grid.SelectedItem as SolicitacaoEncaminhadaModel;
-
-            try
-            {
-                SolicitacaoEncaminhadaViewModel vm = (SolicitacaoEncaminhadaViewModel)grid.DataContext;
-
-
-                var dados = (from t in vm.ItensMontarPedido where t.cod_item == vm.SolicitacaoEncaminhada.cod_item select t).ToList();
-                var fornecedor = (from t in vm.ItensMontarPedido where t.idfornecedor == item.idfornecedor select t.idfornecedor).FirstOrDefault();
-
-                if (vm.ItensMontarPedido.Count > 0 && fornecedor != item.idfornecedor)
-                {
-                    MessageBox.Show("Não é possível adicionar produtos de fornecedores diferentes no mesmo pedido", "Adicionar Item", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
-                if (dados.Count > 0)
-                {
-                    MessageBox.Show("Item já presente no pedido", "Adicionar Item", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
-                if (vm.SolicitacaoEncaminhada?.quantidade_compra == null) 
-                {
-                    MessageBox.Show("Quantidade de compras esta em branco", "Adicionar Item", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
-                vm.ItensMontarPedido.Add(
-                    new ItemPedidoFileModel
-                    {
-                        cod_item = vm.SolicitacaoEncaminhada.cod_item,
-                        idfornecedor = vm.SolicitacaoEncaminhada.idfornecedor,
-                        codcompleadicional = vm.SolicitacaoEncaminhada.codcompleadicional,
-                        planilha = vm.SolicitacaoEncaminhada.planilha,
-                        descricao_completa = vm.SolicitacaoEncaminhada.descricao_completa,
-                        unidade = vm.SolicitacaoEncaminhada.unidade,
-                        quantidade = vm.SolicitacaoEncaminhada.quantidade_compra,
-                        preco = vm.SolicitacaoEncaminhada.preco,
-                    });
-
-                vm.ItensPedido = [.. (from t in vm.ItensMontarPedido
-                                  group t by new { t.idfornecedor, t.codcompleadicional, t.planilha, t.descricao_completa, t.unidade }
-                             into grp
-                                  select new ItemPedidoFileModel
-                                  {
-                                      codcompleadicional = grp.Key.codcompleadicional,
-                                      idfornecedor = grp.Key.idfornecedor,
-                                      planilha = grp.Key.planilha,
-                                      descricao_completa = grp.Key.descricao_completa,
-                                      unidade = grp.Key.unidade,
-                                      quantidade = grp.Sum(t => t.quantidade),
-                                      preco = grp.Sum(t => t.preco), 
-                                      itens = JsonConvert.SerializeObject((from i in vm.ItensMontarPedido where i.codcompleadicional == grp.Key.codcompleadicional select new { i.cod_item }).ToList())
-                                  })];
-
-                grid.View.Remove(item);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-
-
-        }
-
-        static BaseCommand? excel;
-        public static BaseCommand Excel
-        {
-            get
-            {
-                if (excel == null)
-                    excel = new BaseCommand(OnExcelClicked);
-                return excel;
-            }
-        }
-
-        private static void OnExcelClicked(object obj)
-        {
-            try
-            {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
-
-                //GridRecordContextMenuInfo
-                //GridHeaderContextMenu
-                //GridContextMenuInfo
-
-                //var record = ((GridContextMenuInfo)obj).Record as SolicitacaoEncaminhadaModel;
-                var grid = ((GridContextMenuInfo)obj).DataGrid;
-                var item = grid.SelectedItem as SolicitacaoEncaminhadaModel;
-
-                var filteredResult = grid.View.Records.Select(recordentry => recordentry.Data);
-                var itens = grid.View.Records.Count;
-
-                ExcelEngine excelEngine = new ExcelEngine();
-                IApplication excel = excelEngine.Excel;
-                excel.DefaultVersion = ExcelVersion.Xlsx;
-                IWorkbook workbook = excel.Workbooks.Create(1);
+                using ExcelEngine excelEngine = new();
+                IWorkbook workbook = excelEngine.Excel.Workbooks.Open(caminhoModelo, ExcelParseOptions.Default, false, "1@3mudar");
                 IWorksheet worksheet = workbook.Worksheets[0];
 
-                ExcelImportDataOptions importDataOptions = new ExcelImportDataOptions()
+                worksheet.Range["E4"].Text = ViewModel.Pedido.idpedido?.ToString();
+                worksheet.Range["G4"].Text = ViewModel.Pedido.datapedido?.ToString("dd/MM/yyyy");
+                worksheet.Range["C7"].Text = fornecedor?.ToString() ?? "#N/D";
+
+                var itens = ViewModel.ItensPedido.ToList();
+                for (var i = 0; i < itens.Count; i++)
+                {
+                    var item = itens[i];
+                    var linha = i + 12;
+                    worksheet.Range[$"A{linha}"].Text = item.codcompleadicional?.ToString();
+                    worksheet.Range[$"B{linha}"].Text = item.descricao_completa;
+                    worksheet.Range[$"F{linha}"].Number = item.quantidade ?? 0;
+                    worksheet.Range[$"E{linha}"].Number = item.preco ?? 0;
+                    worksheet.Range[$"J{linha}"].Text = item.itens;
+                }
+
+                workbook.Worksheets[1].ImportData(await ViewModel.GetFornecedoresAsync(), 1, 1, true);
+                worksheet.Names.Add("fornecedores").RefersToRange = worksheet.Range["fornecedores!$2:$1048576"];
+                workbook.Worksheets[2].ImportData(await ViewModel.GetCondicoesAsync(), 1, 1, true);
+                worksheet.Names.Add("condicoes").RefersToRange = worksheet.Range["condicoes!$2:$1048576"];
+                workbook.Worksheets[3].ImportData(await ViewModel.GetEmpresasAsync(), 1, 1, true);
+                worksheet.Names.Add("empresas").RefersToRange = worksheet.Range["empresas!$2:$1048576"];
+
+                var diretorio = Path.Combine(baseSettings.CaminhoSistema ?? string.Empty, "Impressos");
+                Directory.CreateDirectory(diretorio);
+                var arquivo = Path.Combine(diretorio, $"PEDIDO-COMPRA-{ViewModel.Pedido.idpedido}.xlsm");
+                workbook.SaveAs(arquivo);
+                workbook.Close();
+
+                Process.Start(new ProcessStartInfo(arquivo) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Gerar pedido", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
+        }
+
+        private void OnExportarExcel(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+                using ExcelEngine excelEngine = new();
+                IWorkbook workbook = excelEngine.Excel.Workbooks.Create(1);
+                IWorksheet worksheet = workbook.Worksheets[0];
+                worksheet.ImportData(ViewModel.SolicitacoesEncaminhadas, new ExcelImportDataOptions
                 {
                     FirstRow = 1,
                     FirstColumn = 1,
                     IncludeHeader = true,
                     PreserveTypes = true
-                };
-
-                var arquivo = "ENCAMINHAMENTO" + Convert.ToDateTime(DateTime.Now).ToString("yyyMMddHHmmss");
-
-                worksheet.ImportData(filteredResult, importDataOptions);
-                worksheet.UsedRange.AutofitColumns();
-                workbook.SaveAs(@$"{BaseSettings.CaminhoSistema}Impressos\{arquivo}.xlsx"); //@$"{BaseSettings.CaminhoSistema}Impressos\
-                workbook.Close();
-                excelEngine.Dispose();
-
-
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-
-                Process.Start(new ProcessStartInfo(@$"{BaseSettings.CaminhoSistema}Impressos\{arquivo}.xlsx")
-                {
-                    UseShellExecute = true
                 });
+                worksheet.UsedRange.AutofitColumns();
+
+                var diretorio = Path.Combine(baseSettings.CaminhoSistema ?? string.Empty, "Impressos");
+                Directory.CreateDirectory(diretorio);
+                var arquivo = Path.Combine(diretorio, $"ENCAMINHAMENTO-{DateTime.Now:yyyyMMddHHmmss}.xlsx");
+                workbook.SaveAs(arquivo);
+                workbook.Close();
+                Process.Start(new ProcessStartInfo(arquivo) { UseShellExecute = true });
             }
             catch (Exception ex)
             {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-                MessageBox.Show(ex.Message);
+                MessageBox.Show(ex.Message, "Exportar", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        }
-
-        static BaseCommand? update;
-        public static BaseCommand Update
-        {
-            get
+            finally
             {
-                if (update == null)
-                    update = new BaseCommand(OnUpdateClicked);
-                return update;
-            }
-        }
-
-        private async static void OnUpdateClicked(object obj)
-        {
-            try
-            {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
-
-
-                var grid = ((GridContextMenuInfo)obj).DataGrid;
-                var item = grid.SelectedItem as SolicitacaoEncaminhadaModel;
-                SolicitacaoEncaminhadaViewModel vm = (SolicitacaoEncaminhadaViewModel)grid.DataContext;
-
-                vm.SolicitacoesEncaminhadas = await Task.Run(() => vm.GetSolicitacaoEncaminhadasAsync());
-                var filteredResult = grid.View.Records.Select(recordentry => recordentry.Data);
-                var itens = grid.View.Records.Count;
-
-
-
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-            }
-            catch (Exception ex)
-            {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-                MessageBox.Show(ex.Message);
+                Mouse.OverrideCursor = null;
             }
         }
     }
 
-    public class GridRowDragDropControllerExt : GridRowDragDropController
+    public class SolicitacaoEncaminhadaViewModel : INotifyPropertyChanged
     {
-        ObservableCollection<object> draggingRecords = new ObservableCollection<object>();
+        private readonly DataBaseSettings baseSettings = DataBaseSettings.Instance;
+        private SolicitacaoEncaminhadaModel? solicitacaoEncaminhada;
+        private ObservableCollection<SolicitacaoEncaminhadaModel> solicitacoesEncaminhadas = [];
+        private ObservableCollection<ItemPedidoFileModel> itensMontarPedido = [];
+        private ICollection<ItemPedidoFileModel> itensPedido = new ObservableCollection<ItemPedidoFileModel>();
+        private PedidoModel? pedido;
+        private string tipo = string.Empty;
 
-        /// <summary>
-        /// Occurs when the input system reports an underlying dragover event with this element as the potential drop target.
-        /// </summary>
-        /// <param name="args">An <see cref="T:Windows.UI.Xaml.DragEventArgs">DragEventArgs</see> that contains the event data.</param>
-        /// <param name="rowColumnIndex">Specifies the row column index based on the mouse point.</param>
-        protected override void ProcessOnDragOver(DragEventArgs args, RowColumnIndex rowColumnIndex)
+        public SolicitacaoEncaminhadaModel? SolicitacaoEncaminhada
         {
-            if (args.Data.GetDataPresent("ListViewRecords"))
-                draggingRecords = args.Data.GetData("ListViewRecords") as ObservableCollection<object>;
-            else
-                draggingRecords = args.Data.GetData("Records") as ObservableCollection<object>;
-
-            if (draggingRecords == null)
-                return;
-
-            //To get the dropping position of the record
-            var dropPosition = GetDropPosition(args, rowColumnIndex, draggingRecords);
-
-            //To Show the draggable popup with the DropAbove/DropBelow message
-            ShowDragDropPopup(dropPosition, draggingRecords, args);
-            //To Show the up and down indicators while dragging the row
-            ShowDragIndicators(dropPosition, rowColumnIndex, args);
-
-            args.Handled = true;
+            get => solicitacaoEncaminhada;
+            set { solicitacaoEncaminhada = value; RaisePropertyChanged(nameof(SolicitacaoEncaminhada)); }
         }
 
-        ListView listview;
-
-        /// <summary>
-        /// Occurs when the input system reports an underlying drop event with this element as the drop target.
-        /// </summary>
-        /// <param name="args">An <see cref="T:Windows.UI.Xaml.DragEventArgs">DragEventArgs</see> that contains the event data.</param>
-        /// <param name="rowColumnIndex">Specifies the row column index based on the mouse point.</param>
-        protected override void ProcessOnDrop(DragEventArgs args, RowColumnIndex rowColumnIndex)
+        public ObservableCollection<SolicitacaoEncaminhadaModel> SolicitacoesEncaminhadas
         {
-            if (args.Data.GetDataPresent("ListView"))
-                listview = args.Data.GetData("ListView") as ListView;
+            get => solicitacoesEncaminhadas;
+            set { solicitacoesEncaminhadas = value; RaisePropertyChanged(nameof(SolicitacoesEncaminhadas)); }
+        }
 
-            if (!DataGrid.SelectionController.CurrentCellManager.CheckValidationAndEndEdit())
-                return;
+        public ObservableCollection<ItemPedidoFileModel> ItensMontarPedido
+        {
+            get => itensMontarPedido;
+            set { itensMontarPedido = value; RaisePropertyChanged(nameof(ItensMontarPedido)); }
+        }
 
-            //To get the dropping position of the record
-            var dropPosition = GetDropPosition(args, rowColumnIndex, draggingRecords);
-            if (dropPosition == DropPosition.None)
-                return;
+        public ICollection<ItemPedidoFileModel> ItensPedido
+        {
+            get => itensPedido;
+            set { itensPedido = value; RaisePropertyChanged(nameof(ItensPedido)); }
+        }
 
-            // to get the index of dropping record
-            var droppingRecordIndex = this.DataGrid.ResolveToRecordIndex(rowColumnIndex.RowIndex);
+        public PedidoModel? Pedido
+        {
+            get => pedido;
+            set { pedido = value; RaisePropertyChanged(nameof(Pedido)); }
+        }
 
-            if (droppingRecordIndex < 0)
-                return;
+        public string Tipo
+        {
+            get => tipo;
+            set { tipo = value; RaisePropertyChanged(nameof(Tipo)); }
+        }
 
-            // to insert the dragged records based on dropping records index 
-            foreach (var record in draggingRecords)
-            {
-                if (listview != null)
-                {
-                    (listview.ItemsSource as ObservableCollection<SolicitacaoEncaminhadaModel>).Remove(record as SolicitacaoEncaminhadaModel);
-                    var sourceCollection = this.DataGrid.View.SourceCollection as IList;
+        private NpgsqlConnection CreateConnection() => new(baseSettings.ConnectionString);
 
-                    if (dropPosition == DropPosition.DropBelow)
-                        sourceCollection.Insert(droppingRecordIndex + 1, record);
-                    else
-                        sourceCollection.Insert(droppingRecordIndex, record);
-                }
-                else
-                {
-                    var draggingIndex = this.DataGrid.ResolveToRowIndex(draggingRecords[0]);
+        public async Task<ObservableCollection<SolicitacaoEncaminhadaModel>> GetSolicitacaoEncaminhadasAsync()
+        {
+            var sql = Tipo.Trim().Equals("SERVIÇO", StringComparison.InvariantCultureIgnoreCase)
+                ? """
+                    SELECT * FROM compras.qry_solicitacoes_encaminhadas
+                    WHERE COALESCE(finalizado, false) = false AND tipo = 'SERVIÇO'
+                    ORDER BY data_solicitacao, cod_solicitacao, cod_item;
+                    """
+                : """
+                    SELECT * FROM compras.qry_solicitacoes_encaminhadas
+                    WHERE COALESCE(finalizado, false) = false
+                    ORDER BY data_solicitacao, cod_solicitacao, cod_item;
+                    """;
 
-                    if (draggingIndex < 0)
-                    {
-                        return;
-                    }
+            await using var connection = CreateConnection();
+            return new ObservableCollection<SolicitacaoEncaminhadaModel>(
+                await connection.QueryAsync<SolicitacaoEncaminhadaModel>(sql));
+        }
 
-                    // to get the index of dragging row
-                    var recordindex = this.DataGrid.ResolveToRecordIndex(draggingIndex);
-                    // to ger the record based on index
-                    var recordEntry = this.DataGrid.View.Records[recordindex];
-                    this.DataGrid.View.Records.Remove(recordEntry);
+        public async Task<ObservableCollection<SolicitacaoEncaminhadaModel>> GetSolicitacaoFinalizadasAsync()
+        {
+            var sql = Tipo.Trim().ToUpperInvariant() == "SERVIÇO"
+                ? """
+                    SELECT * FROM compras.qry_solicitacoes_encaminhadas
+                    WHERE finalizado = true AND tipo = 'SERVIÇO'
+                    ORDER BY finalizado_em DESC;
+                    """
+                : """
+                    SELECT * FROM compras.qry_solicitacoes_encaminhadas
+                    WHERE finalizado = true
+                    ORDER BY finalizado_em DESC;
+                    """;
 
-                    // to insert the dragged records to particular position
-                    if (draggingIndex < rowColumnIndex.RowIndex && dropPosition == DropPosition.DropAbove)
-                        this.DataGrid.View.Records.Insert(droppingRecordIndex - 1, this.DataGrid.View.Records.CreateRecord(record));
-                    else if (draggingIndex > rowColumnIndex.RowIndex && dropPosition == DropPosition.DropBelow)
-                        this.DataGrid.View.Records.Insert(droppingRecordIndex + 1, this.DataGrid.View.Records.CreateRecord(record));
-                    else
-                        this.DataGrid.View.Records.Insert(droppingRecordIndex, this.DataGrid.View.Records.CreateRecord(record));
-                }
-            }
+            await using var connection = CreateConnection();
+            return new ObservableCollection<SolicitacaoEncaminhadaModel>(
+                await connection.QueryAsync<SolicitacaoEncaminhadaModel>(sql));
+        }
 
-            //Closes the Drag arrow indication all the rows
-            CloseDragIndicators();
-            //Closes the Drag arrow indication all the rows
-            CloseDraggablePopUp();
+        public async Task<SolicitacaoEncaminhadaModel> UpdateSolicitacaoEncaminhadaAsync(SolicitacaoEncaminhadaModel solicitacao)
+        {
+            const string sql = """
+                UPDATE compras.solicitacao_material_itens
+                SET data_entrega = @data_entrega,
+                    quantidade_compra = @quantidade_compra,
+                    preco = @preco,
+                    orientacao_compra = @orientacao_compra,
+                    orientacao_roteiro = @orientacao_roteiro,
+                    finalizado = COALESCE(@finalizado, finalizado),
+                    finalizado_em = @finalizado_em,
+                    finalizado_por = @finalizado_por
+                WHERE cod_item = @cod_item;
+                """;
+
+            await using var connection = CreateConnection();
+            var linhas = await connection.ExecuteAsync(sql, solicitacao);
+            if (linhas != 1)
+                throw new InvalidOperationException("A solicitação não foi localizada para atualização.");
+
+            return solicitacao;
+        }
+
+        public async Task FinalizarItemSolicitadoAsync(SolicitacaoEncaminhadaModel solicitacao)
+        {
+            const string sql = """
+                UPDATE compras.solicitacao_material_itens
+                SET finalizado = @finalizado,
+                    finalizado_em = @finalizado_em,
+                    finalizado_por = @finalizado_por
+                WHERE cod_item = @cod_item;
+                """;
+
+            await using var connection = CreateConnection();
+            await connection.ExecuteAsync(sql, solicitacao);
+        }
+
+        public async Task<PedidoModel> CreatePedido(PedidoModel novoPedido)
+        {
+            const string sql = """
+                INSERT INTO compras.pedidos (datapedido, codfornecedor)
+                VALUES (@datapedido, @codfornecedor)
+                RETURNING idpedido;
+                """;
+
+            await using var connection = CreateConnection();
+            novoPedido.idpedido = await connection.ExecuteScalarAsync<long>(sql, novoPedido);
+            return novoPedido;
+        }
+
+        public async Task<ObservableCollection<Fornecedor>> GetFornecedoresAsync()
+        {
+            const string sql = "SELECT * FROM compras.fornecedores ORDER BY nomefantasia;";
+            await using var connection = CreateConnection();
+            return new ObservableCollection<Fornecedor>(await connection.QueryAsync<Fornecedor>(sql));
+        }
+
+        public async Task<ObservableCollection<CondicaoPagtoModel>> GetCondicoesAsync()
+        {
+            const string sql = "SELECT * FROM compras.tbl_condicoes_pagto ORDER BY descricao_cond_pagamento;";
+            await using var connection = CreateConnection();
+            return new ObservableCollection<CondicaoPagtoModel>(await connection.QueryAsync<CondicaoPagtoModel>(sql));
+        }
+
+        public async Task<ObservableCollection<EmpresaModel>> GetEmpresasAsync()
+        {
+            const string sql = "SELECT * FROM compras.tblempresa ORDER BY abreviacao;";
+            await using var connection = CreateConnection();
+            return new ObservableCollection<EmpresaModel>(await connection.QueryAsync<EmpresaModel>(sql));
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        public void RaisePropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

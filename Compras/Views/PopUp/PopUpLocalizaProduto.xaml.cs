@@ -1,86 +1,136 @@
-﻿using Syncfusion.UI.Xaml.Grid;
+using Compras.Utils;
+using Dapper;
+using Npgsql;
 using System;
-using System.Threading.Tasks;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 
 namespace Compras.Views.PopUp
 {
-    /// <summary>
-    /// Interação lógica para PopUpLocalizaProduto.xam
-    /// </summary>
     public partial class PopUpLocalizaProduto : UserControl
     {
-        public PopUpLocalizaProduto(object DataContext)
+        public PopUpLocalizaProduto(object dataContext)
         {
             InitializeComponent();
-            this.DataContext = DataContext;
+            DataContext = dataContext;
 
-            this.dataGrid.SearchHelper = new SearchHelperExt(this.dataGrid);
-            this.txtBusca.LostFocus += TextBox_LostFocus;
-            this.txtBusca.PreviewKeyDown += TextBox_PreviewKeyDown;
-            this.txtBusca.TextChanged += TxtBusca_TextChanged;
+            txtBusca.LostFocus += TextBox_LostFocus;
+            txtBusca.PreviewKeyDown += TextBox_PreviewKeyDown;
+            txtBusca.TextChanged += TxtBusca_TextChanged;
         }
 
         private void TxtBusca_TextChanged(object sender, TextChangedEventArgs e)
         {
-            PerformSearch();
+            ApplyFilter();
         }
 
         private async void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
             txtBusca.Focus();
+
             try
             {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
-                SolicitacaoViewModel vm = (SolicitacaoViewModel)DataContext;
-                vm.Descricoes = await Task.Run(async () => await vm.GetDescricoesAsync(vm?.SolicitacaoMaterial?.tipo));
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-
+                using var _ = UiFeedbackHelper.BeginBusyCursor();
+                var vm = (SolicitacaoViewModel)DataContext;
+                vm.Descricoes = await GetDescricoesAsync(vm?.SolicitacaoMaterial?.tipo);
+                ApplyFilter();
             }
             catch (Exception ex)
             {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-                MessageBox.Show(ex.Message);
+                UiFeedbackHelper.ShowError(ex);
             }
         }
 
         private void TextBox_LostFocus(object sender, RoutedEventArgs e)
         {
-            PerformSearch();
+            ApplyFilter();
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
-                PerformSearch();
+            {
+                ApplyFilter();
+            }
         }
 
-        private void PerformSearch()
+        private async System.Threading.Tasks.Task<ObservableCollection<DescricaoProducaoModel>> GetDescricoesAsync(string? tipo)
         {
-            try
-            {
-                if (this.dataGrid.SearchHelper.SearchText.Equals(this.txtBusca.Text))
-                    return;
+            const string sql = """
+                SELECT planilha,
+                       descricao,
+                       descricao_adicional,
+                       complementoadicional,
+                       codcompladicional,
+                       unidade,
+                       inativo,
+                       prodcontrolado,
+                       vida_util,
+                       diverso,
+                       custo,
+                       coduniadicional,
+                       descricaofiscal,
+                       descricaoespanhol,
+                       familia,
+                       descricao_completa,
+                       codigo,
+                       saldo_estoque,
+                       classe_compra
+                FROM producao.qry3descricoes
+                WHERE classe_compra = @tipo
+                  AND COALESCE(inativo, '0') <> '-1';
+                """;
 
-                var text = txtBusca.Text;
-                //AllowCaseSensitiveSearch  - true -> improves the performance when search numeric fields.
-                this.dataGrid.SearchHelper.AllowCaseSensitiveSearch = false;
-                this.dataGrid.SearchHelper.SearchType = SearchType.Contains;
-                this.dataGrid.SearchHelper.AllowFiltering = true;
-                this.dataGrid.SearchHelper.Search(text);
-            }
-            catch (Exception ex)
+            var vm = (SolicitacaoViewModel)DataContext;
+            await using var connection = new NpgsqlConnection(vm.BaseSettings.ConnectionString);
+            var data = await connection.QueryAsync<DescricaoProducaoModel>(sql, new { tipo });
+            return new ObservableCollection<DescricaoProducaoModel>(data);
+        }
+
+        private void ApplyFilter()
+        {
+            if (CollectionViewSource.GetDefaultView(dataGrid.ItemsSource) is not ICollectionView view)
             {
-                MessageBox.Show(ex.Message);
+                return;
             }
+
+            var searchText = txtBusca.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                view.Filter = null;
+                view.Refresh();
+                return;
+            }
+
+            view.Filter = item =>
+            {
+                if (item is not DescricaoProducaoModel descricao)
+                {
+                    return false;
+                }
+
+                return Contains(descricao.planilha, searchText)
+                    || Contains(descricao.descricao_completa, searchText)
+                    || Contains(descricao.unidade, searchText)
+                    || Contains(descricao.familia, searchText);
+            };
+
+            view.Refresh();
+        }
+
+        private static bool Contains(string? source, string searchText)
+        {
+            return !string.IsNullOrWhiteSpace(source)
+                   && source.Contains(searchText, StringComparison.OrdinalIgnoreCase);
         }
 
         private void dataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            var myWindow = Window.GetWindow(this);
-            myWindow.Close();
+            Window.GetWindow(this)?.Close();
         }
     }
 }

@@ -78,6 +78,7 @@ namespace Compras
         public bool? finalizado { get; set; }
         public string? finalizado_por { get; set; }
         public DateTime? finalizado_em { get; set; }
+        public long[]? codigos_itens_origem { get; set; }
 
     }
 }

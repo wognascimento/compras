@@ -1,91 +1,81 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Compras.Utils;
+using Dapper;
+using Npgsql;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace Compras.Views
 {
-    /// <summary>
-    /// Interação lógica para ViewConsultaGerencial.xam
-    /// </summary>
     public partial class ViewConsultaGerencial : UserControl
     {
         public ViewConsultaGerencial()
         {
             InitializeComponent();
-            this.DataContext = new ConsultaGerencialViewModel();
+            DataContext = new ConsultaGerencialViewModel();
         }
 
         private async void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
             try
             {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
-
-                ConsultaGerencialViewModel vm = (ConsultaGerencialViewModel)DataContext;
-                vm.Detalhes = await Task.Run(vm.GeDetalhesAsync);
-
-                /*
-                itens.Columns["inserido_por"].FilteredFrom = FilteredFrom.FilterRow;
-                itens.Columns["inserido_por"].FilterPredicates.Add(new FilterPredicate()
-                {
-                    FilterType = FilterType.Equals,
-                    FilterValue = vm.BaseSettings.Username
-                });
-                */
-
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+                using var _ = UiFeedbackHelper.BeginBusyCursor();
+                var vm = (ConsultaGerencialViewModel)DataContext;
+                vm.Detalhes = await vm.GeDetalhesAsync();
             }
             catch (Exception ex)
             {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-                MessageBox.Show(ex.Message);
+                UiFeedbackHelper.ShowError(ex);
             }
         }
-
     }
 
     public class ConsultaGerencialViewModel : INotifyPropertyChanged
     {
         public DataBaseSettings BaseSettings = DataBaseSettings.Instance;
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
+
         public void RaisePropertyChanged(string propName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
         }
 
-        #region Consulta Detalhes
-        private SolicitacaoDetalheItem detalhe;
-        public SolicitacaoDetalheItem Detalhe
+        private SolicitacaoDetalheItem? detalhe;
+        public SolicitacaoDetalheItem? Detalhe
         {
-            get { return detalhe; }
-            set { detalhe = value; RaisePropertyChanged("Detalhe"); }
+            get => detalhe;
+            set
+            {
+                detalhe = value;
+                RaisePropertyChanged(nameof(Detalhe));
+            }
         }
-        private ObservableCollection<SolicitacaoDetalheItem> detalhes;
+
+        private ObservableCollection<SolicitacaoDetalheItem> detalhes = [];
         public ObservableCollection<SolicitacaoDetalheItem> Detalhes
         {
-            get { return detalhes; }
-            set { detalhes = value; RaisePropertyChanged("Detalhes"); }
+            get => detalhes;
+            set
+            {
+                detalhes = value;
+                RaisePropertyChanged(nameof(Detalhes));
+            }
         }
-        #endregion
 
         public async Task<ObservableCollection<SolicitacaoDetalheItem>> GeDetalhesAsync()
         {
-            try
-            {
-                using DatabaseContext db = new();
-                var data = await db.SolicitacaoDetalhes.ToListAsync();
-                return new ObservableCollection<SolicitacaoDetalheItem>(data);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            const string sql = """
+                SELECT *
+                FROM compras.qry_solicitacoes_detalhes_itens;
+                """;
+
+            await using var connection = new NpgsqlConnection(BaseSettings.ConnectionString);
+            var data = await connection.QueryAsync<SolicitacaoDetalheItem>(sql);
+            return new ObservableCollection<SolicitacaoDetalheItem>(data);
         }
     }
 }

@@ -1,255 +1,299 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Syncfusion.UI.Xaml.Grid;
+using Compras.Utils;
+using Dapper;
+using Npgsql;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
+using Telerik.Windows.Controls;
+using Telerik.Windows.Controls.GridView;
 
 namespace Compras.Views
 {
-    /// <summary>
-    /// Interação lógica para ViewCadastroCondicaoPagamento.xam
-    /// </summary>
     public partial class ViewCadastroCondicaoPagamento : UserControl
     {
         public ViewCadastroCondicaoPagamento()
         {
             InitializeComponent();
-            this.DataContext = new CondicaoPagamentoViewModel();
+            DataContext = new CondicaoPagamentoViewModel();
         }
 
         private async void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
             try
             {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
-                CondicaoPagamentoViewModel vm = (CondicaoPagamentoViewModel)DataContext;
-                vm.CondicoesPagto = await Task.Run(vm.GetCondicoesAsync);
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+                using var _ = UiFeedbackHelper.BeginBusyCursor();
+                var vm = (CondicaoPagamentoViewModel)DataContext;
+                vm.CondicoesPagto = await vm.GetCondicoesAsync();
+                vm.CondicoesPagtoPrcela = [];
             }
             catch (Exception ex)
             {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-                MessageBox.Show(ex.Message);
+                UiFeedbackHelper.ShowError(ex);
             }
         }
 
-        private async void OnDbClick(object sender, MouseButtonEventArgs e)
+        private async void condicoes_SelectionChanged(object sender, SelectionChangeEventArgs e)
         {
+            var vm = (CondicaoPagamentoViewModel)DataContext;
+            if (vm.CondicaoPagto?.id_cond_pagamento is null)
+            {
+                vm.CondicoesPagtoPrcela = [];
+                return;
+            }
+
             try
             {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
+                using var _ = UiFeedbackHelper.BeginBusyCursor();
+                vm.CondicoesPagtoPrcela = await vm.GetCondicoesParcelasAsync(vm.CondicaoPagto.id_cond_pagamento);
+            }
+            catch (Exception ex)
+            {
+                UiFeedbackHelper.ShowError(ex);
+            }
+        }
 
-                CondicaoPagamentoViewModel vm = (CondicaoPagamentoViewModel)DataContext;
-                if(vm.CondicaoPagto == null)
+        private async void condicoes_RowEditEnded(object sender, GridViewRowEditEndedEventArgs e)
+        {
+            if (e.EditAction != GridViewEditAction.Commit || e.NewData is not CondicaoPagtoModel data)
+            {
+                return;
+            }
+
+            try
+            {
+                using var _ = UiFeedbackHelper.BeginBusyCursor();
+                var vm = (CondicaoPagamentoViewModel)DataContext;
+                var saved = await vm.AddCondicaoAsync(data);
+                data.id_cond_pagamento = saved.id_cond_pagamento;
+                vm.CondicaoPagto = data;
+                vm.CondicoesPagtoPrcela = await vm.GetCondicoesParcelasAsync(saved.id_cond_pagamento);
+            }
+            catch (Exception ex)
+            {
+                UiFeedbackHelper.ShowError(ex);
+            }
+        }
+
+        private void condicoes_RowValidating(object sender, GridViewRowValidatingEventArgs e)
+        {
+            if (e.Row?.Item is not CondicaoPagtoModel data)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(data.descricao_cond_pagamento))
+            {
+                e.IsValid = false;
+            }
+        }
+
+        private async void parcelas_RowEditEnded(object sender, GridViewRowEditEndedEventArgs e)
+        {
+            if (e.EditAction != GridViewEditAction.Commit || e.NewData is not CondicaoPagamentoParcelaModel data)
+            {
+                return;
+            }
+
+            try
+            {
+                using var _ = UiFeedbackHelper.BeginBusyCursor();
+                var vm = (CondicaoPagamentoViewModel)DataContext;
+                if (vm.CondicaoPagto?.id_cond_pagamento is null)
                 {
-                    vm.CondicaoPagto = new CondicaoPagtoModel();
-                    Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-                    return;
+                    throw new InvalidOperationException("Selecione ou salve uma condição de pagamento antes de cadastrar parcelas.");
                 }
 
-                vm.CondicoesPagtoPrcela = await Task.Run(() => vm.GetCondicoesParcelasAsync(vm.CondicaoPagto.id_cond_pagamento));
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+                data.id_cond_pagamento = vm.CondicaoPagto.id_cond_pagamento;
+                var saved = await vm.SaveParcelaCondicaoAsync(data);
+                data.id_parcela = saved.id_parcela;
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+                UiFeedbackHelper.ShowError(ex);
             }
         }
-        bool usetransition = false;
-        private async void condicoes_RowValidated(object sender, Syncfusion.UI.Xaml.Grid.RowValidatedEventArgs e)
+
+        private void parcelas_RowValidating(object sender, GridViewRowValidatingEventArgs e)
         {
-            try
+            if (e.Row?.Item is not CondicaoPagamentoParcelaModel data)
             {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
-
-                CondicaoPagamentoViewModel vm = (CondicaoPagamentoViewModel)DataContext;
-                CondicaoPagtoModel data = (CondicaoPagtoModel)e.RowData;
-
-                var dados = await Task.Run(async () => await vm.AddCondicaoAsync(data));
-
-                vm.CondicoesPagtoPrcela = await Task.Run(() => vm.GetCondicoesParcelasAsync(dados.id_cond_pagamento));
-
-                ((CondicaoPagtoModel)e.RowData).id_cond_pagamento = dados.id_cond_pagamento;
-
-                var addNewRow = this.condicoes.RowGenerator.Items.FirstOrDefault(item => item.RowType == RowType.AddNewRow);
-                if (condicoes.IsAddNewIndex(e.RowIndex))
-                {
-                    condicoes?.Dispatcher.BeginInvoke(new Action(() =>
-                    {
-                        condicoes.SelectedItem = e.RowData;
-                        //To move the current cell.
-                        condicoes.ScrollInView(condicoes.SelectionController.CurrentCellManager.CurrentRowColumnIndex);
-                        usetransition = true;
-                        //To change the AddNewRow state.
-                        VisualStateManager.GoToState(addNewRow?.Element, "Normal", usetransition);
-                        usetransition = false;
-                    }));
-                }
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+                return;
             }
-            catch (Exception ex)
+
+            if (data.numero_dias is null || data.numero_dias < 0)
             {
-                MessageBox.Show(ex.Message);
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+                e.IsValid = false;
             }
-        }
-
-        private void condicoes_RowValidating(object sender, RowValidatingEventArgs e)
-        {
-
-        }
-
-        private void parcelas_AddNewRowInitiating(object sender, AddNewRowInitiatingEventArgs e)
-        {
-            CondicaoPagamentoViewModel vm = (CondicaoPagamentoViewModel)DataContext;
-
-            var data = e.NewObject as CondicaoPagamentoParcelaModel;
-            data.id_cond_pagamento = vm.CondicaoPagto.id_cond_pagamento;
-        }
-
-        private async void parcelas_RowValidated(object sender, RowValidatedEventArgs e)
-        {
-            try
-            {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
-                CondicaoPagamentoViewModel vm = (CondicaoPagamentoViewModel)DataContext;
-                CondicaoPagamentoParcelaModel data = (CondicaoPagamentoParcelaModel)e.RowData;
-
-                var dados = await Task.Run(async () => await vm.SaveParcelaCondicaoAsync(data));
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-            }
-        }
-
-        private void parcelas_RowValidating(object sender, RowValidatingEventArgs e)
-        {
-
         }
     }
 
     public class CondicaoPagamentoViewModel : INotifyPropertyChanged
     {
-
         public DataBaseSettings BaseSettings = DataBaseSettings.Instance;
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
+
         public void RaisePropertyChanged(string propName)
         {
-            if (PropertyChanged != null)
-                PropertyChanged(this, new PropertyChangedEventArgs(propName));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
         }
 
-        #region Condições de Pagamento
-        private CondicaoPagtoModel condicaoPagto;
-        public CondicaoPagtoModel CondicaoPagto
+        private CondicaoPagtoModel? condicaoPagto;
+        public CondicaoPagtoModel? CondicaoPagto
         {
-            get { return condicaoPagto; }
-            set { condicaoPagto = value; RaisePropertyChanged("CondicaoPagto"); }
+            get => condicaoPagto;
+            set
+            {
+                condicaoPagto = value;
+                RaisePropertyChanged(nameof(CondicaoPagto));
+            }
         }
-        private ObservableCollection<CondicaoPagtoModel> condicoesPagto;
+
+        private ObservableCollection<CondicaoPagtoModel> condicoesPagto = [];
         public ObservableCollection<CondicaoPagtoModel> CondicoesPagto
         {
-            get { return condicoesPagto; }
-            set { condicoesPagto = value; RaisePropertyChanged("CondicoesPagto"); }
+            get => condicoesPagto;
+            set
+            {
+                condicoesPagto = value;
+                RaisePropertyChanged(nameof(CondicoesPagto));
+            }
         }
-        #endregion
 
-        #region Condições de Pagamento Parcelas
-        private CondicaoPagamentoParcelaModel condicaoPagtoPrcela;
-        public CondicaoPagamentoParcelaModel CondicaoPagtoPrcela
+        private CondicaoPagamentoParcelaModel? condicaoPagtoPrcela;
+        public CondicaoPagamentoParcelaModel? CondicaoPagtoPrcela
         {
-            get { return condicaoPagtoPrcela; }
-            set { condicaoPagtoPrcela = value; RaisePropertyChanged("CondicaoPagtoPrcela"); }
+            get => condicaoPagtoPrcela;
+            set
+            {
+                condicaoPagtoPrcela = value;
+                RaisePropertyChanged(nameof(CondicaoPagtoPrcela));
+            }
         }
-        private ObservableCollection<CondicaoPagamentoParcelaModel> condicoesPagtoPrcela;
+
+        private ObservableCollection<CondicaoPagamentoParcelaModel> condicoesPagtoPrcela = [];
         public ObservableCollection<CondicaoPagamentoParcelaModel> CondicoesPagtoPrcela
         {
-            get { return condicoesPagtoPrcela; }
-            set { condicoesPagtoPrcela = value; RaisePropertyChanged("CondicoesPagtoPrcela"); }
+            get => condicoesPagtoPrcela;
+            set
+            {
+                condicoesPagtoPrcela = value;
+                RaisePropertyChanged(nameof(CondicoesPagtoPrcela));
+            }
         }
-        #endregion
 
         public async Task<ObservableCollection<CondicaoPagtoModel>> GetCondicoesAsync()
         {
-            try
-            {
-                using DatabaseContext db = new();
-                var data = await db.CondicaoPagamentos.OrderBy(x => x.descricao_cond_pagamento).ToListAsync();
-                return new ObservableCollection<CondicaoPagtoModel>(data);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            const string sql = """
+                SELECT id_cond_pagamento, descricao_cond_pagamento, num_parcelas, cod_cond_pagto_totvs
+                FROM compras.tbl_condicoes_pagto
+                ORDER BY descricao_cond_pagamento;
+                """;
+
+            await using var connection = new NpgsqlConnection(BaseSettings.ConnectionString);
+            var data = await connection.QueryAsync<CondicaoPagtoModel>(sql);
+            return new ObservableCollection<CondicaoPagtoModel>(data);
         }
 
-        public async Task<ObservableCollection<CondicaoPagamentoParcelaModel>> GetCondicoesParcelasAsync(long? id_cond_pagamento)
+        public async Task<ObservableCollection<CondicaoPagamentoParcelaModel>> GetCondicoesParcelasAsync(long? idCondPagamento)
         {
-            try
+            if (idCondPagamento is null)
             {
-                using DatabaseContext db = new();
-                var data = await db.CondicaoPagamentoParcelas.Where(x => x.id_cond_pagamento == id_cond_pagamento).OrderBy(x => x.id_parcela).ToListAsync();
-                return new ObservableCollection<CondicaoPagamentoParcelaModel>(data);
+                return [];
             }
-            catch (Exception)
-            {
-                throw;
-            }
+
+            const string sql = """
+                SELECT id_parcela, id_cond_pagamento, numero_dias
+                FROM compras.tbl_parcelas_pagto
+                WHERE id_cond_pagamento = @idCondPagamento
+                ORDER BY id_parcela;
+                """;
+
+            await using var connection = new NpgsqlConnection(BaseSettings.ConnectionString);
+            var data = await connection.QueryAsync<CondicaoPagamentoParcelaModel>(sql, new { idCondPagamento });
+            return new ObservableCollection<CondicaoPagamentoParcelaModel>(data);
         }
 
         public async Task<CondicaoPagtoModel> AddCondicaoAsync(CondicaoPagtoModel condicao)
         {
-            try
+            await using var connection = new NpgsqlConnection(BaseSettings.ConnectionString);
+
+            if (condicao.id_cond_pagamento is null or 0)
             {
-                using DatabaseContext db = new();
-                await db.CondicaoPagamentos.SingleMergeAsync(condicao);
-                db.SaveChanges();
+                const string insertSql = """
+                    INSERT INTO compras.tbl_condicoes_pagto
+                    (
+                        descricao_cond_pagamento,
+                        num_parcelas,
+                        cod_cond_pagto_totvs
+                    )
+                    VALUES
+                    (
+                        @descricao_cond_pagamento,
+                        @num_parcelas,
+                        @cod_cond_pagto_totvs
+                    )
+                    RETURNING id_cond_pagamento;
+                    """;
+
+                condicao.id_cond_pagamento = await connection.ExecuteScalarAsync<long>(insertSql, condicao);
                 return condicao;
             }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-        public async Task<CondicaoPagamentoParcelaModel> SaveParcelaCondicaoAsync(CondicaoPagamentoParcelaModel parcela)
-        {
-            try
-            {
-                using DatabaseContext db = new();
-                //var dado = await db.CondicaoPagamentoParcelas.Where(x => x.id_cond_pagamento == parcela.id_cond_pagamento && x.id_parcela == parcela.id_parcela).FirstOrDefaultAsync();
-                //dado.numero_dias = parcela.numero_dias;
-                await db.CondicaoPagamentoParcelas.SingleMergeAsync(parcela);
-                db.SaveChanges();
-                return parcela;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-        public async Task AddParcelasAsync(ObservableCollection<CondicaoPagamentoParcelaModel> parcelas)
-        {
-            try
-            {
-                using DatabaseContext db = new();
-                await db.CondicaoPagamentoParcelas.BulkMergeAsync(parcelas);
-                //db.SaveChanges();
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+
+            const string updateSql = """
+                UPDATE compras.tbl_condicoes_pagto
+                SET descricao_cond_pagamento = @descricao_cond_pagamento,
+                    num_parcelas = @num_parcelas,
+                    cod_cond_pagto_totvs = @cod_cond_pagto_totvs
+                WHERE id_cond_pagamento = @id_cond_pagamento;
+                """;
+
+            await connection.ExecuteAsync(updateSql, condicao);
+            return condicao;
         }
 
+        public async Task<CondicaoPagamentoParcelaModel> SaveParcelaCondicaoAsync(CondicaoPagamentoParcelaModel parcela)
+        {
+            if (parcela.id_cond_pagamento is null or 0)
+            {
+                throw new InvalidOperationException("Condição de pagamento não informada para a parcela.");
+            }
+
+            await using var connection = new NpgsqlConnection(BaseSettings.ConnectionString);
+
+            if (parcela.id_parcela is null or 0)
+            {
+                const string nextIdSql = """
+                    SELECT COALESCE(MAX(id_parcela), 0) + 1
+                    FROM compras.tbl_parcelas_pagto
+                    WHERE id_cond_pagamento = @id_cond_pagamento;
+                    """;
+
+                parcela.id_parcela = await connection.ExecuteScalarAsync<long>(nextIdSql, new { parcela.id_cond_pagamento });
+            }
+
+            const string upsertSql = """
+                INSERT INTO compras.tbl_parcelas_pagto
+                (
+                    id_parcela,
+                    id_cond_pagamento,
+                    numero_dias
+                )
+                VALUES
+                (
+                    @id_parcela,
+                    @id_cond_pagamento,
+                    @numero_dias
+                )
+                ON CONFLICT (id_parcela, id_cond_pagamento) DO UPDATE
+                SET numero_dias = EXCLUDED.numero_dias;
+                """;
+
+            await connection.ExecuteAsync(upsertSql, parcela);
+            return parcela;
+        }
     }
 }

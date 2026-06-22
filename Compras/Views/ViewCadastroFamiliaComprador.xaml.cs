@@ -1,72 +1,61 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Compras.Utils;
+using Dapper;
+using Npgsql;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using Telerik.Windows.Controls;
+using Telerik.Windows.Controls.GridView;
 
 namespace Compras.Views
 {
-    /// <summary>
-    /// Interação lógica para ViewCadastroFamiliaComprador.xam
-    /// </summary>
     public partial class ViewCadastroFamiliaComprador : UserControl
     {
         public ViewCadastroFamiliaComprador()
         {
             InitializeComponent();
-            this.DataContext = new FamiliaProdutoViewModel();
+            DataContext = new FamiliaProdutoViewModel();
         }
 
         private async void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
             try
             {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
-                FamiliaProdutoViewModel vm = (FamiliaProdutoViewModel)DataContext;
-                vm.FamiliasProduto = await Task.Run(vm.GetFamiliaProdutos);
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+                using var _ = UiFeedbackHelper.BeginBusyCursor();
+                var vm = (FamiliaProdutoViewModel)DataContext;
+                vm.FamiliasProduto = await vm.GetFamiliaProdutos();
             }
             catch (Exception ex)
             {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-                MessageBox.Show(ex.Message);
+                UiFeedbackHelper.ShowError(ex);
             }
         }
 
-        private async void SfDataGrid_RowValidated(object sender, Syncfusion.UI.Xaml.Grid.RowValidatedEventArgs e)
+        private async void FamiliasGrid_RowEditEnded(object sender, GridViewRowEditEndedEventArgs e)
         {
+            if (e.EditAction != GridViewEditAction.Commit || e.NewData is not FamiliaProdutoModel data)
+            {
+                return;
+            }
+
             try
             {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
-                FamiliaProdutoViewModel vm = (FamiliaProdutoViewModel)DataContext;
-                FamiliaProdutoModel data = (FamiliaProdutoModel)e.RowData;
-
-                var dados = await Task.Run(async () => await vm.UpdateRespCompraAsync(data));
-                MessageBox.Show("Responsavel compras cadastrado!\nAs Solicitações para esta Família serão automaticamente alteradas.", "Resp compras");
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+                using var _ = UiFeedbackHelper.BeginBusyCursor();
+                var vm = (FamiliaProdutoViewModel)DataContext;
+                await vm.UpdateRespCompraAsync(data);
+                MessageBox.Show(
+                    "Responsavel compras cadastrado!\nAs Solicitações para esta Família serão automaticamente alteradas.",
+                    "Resp compras",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-                MessageBox.Show(ex.Message);
+                UiFeedbackHelper.ShowError(ex);
             }
-        }
-
-        private void SfDataGrid_RowValidating(object sender, Syncfusion.UI.Xaml.Grid.RowValidatingEventArgs e)
-        {
-
         }
     }
 
@@ -74,54 +63,64 @@ namespace Compras.Views
     {
         public DataBaseSettings BaseSettings = DataBaseSettings.Instance;
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
+
         public void RaisePropertyChanged(string propName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
         }
 
-        #region Familia Produto
-        private FamiliaProdutoModel familiaProduto;
-        public FamiliaProdutoModel FamiliaProduto
+        private FamiliaProdutoModel? familiaProduto;
+        public FamiliaProdutoModel? FamiliaProduto
         {
-            get { return familiaProduto; }
-            set { familiaProduto = value; RaisePropertyChanged("FamiliaProduto"); }
+            get => familiaProduto;
+            set
+            {
+                familiaProduto = value;
+                RaisePropertyChanged(nameof(FamiliaProduto));
+            }
         }
-        private ObservableCollection<FamiliaProdutoModel> familiasProduto;
+
+        private ObservableCollection<FamiliaProdutoModel> familiasProduto = [];
         public ObservableCollection<FamiliaProdutoModel> FamiliasProduto
         {
-            get { return familiasProduto; }
-            set { familiasProduto = value; RaisePropertyChanged("FamiliasProduto"); }
+            get => familiasProduto;
+            set
+            {
+                familiasProduto = value;
+                RaisePropertyChanged(nameof(FamiliasProduto));
+            }
         }
-        #endregion
 
         public async Task<ObservableCollection<FamiliaProdutoModel>> GetFamiliaProdutos()
         {
-            try
-            {
-                using DatabaseContext db = new();
-                var data = await db.FamiliaProdutos.OrderBy(x => x.nomefamilia).ToListAsync();
-                return new ObservableCollection<FamiliaProdutoModel>(data);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            const string sql = """
+                SELECT codigofamilia, nomefamilia, res_compra
+                FROM compras.tblfamiliaprod
+                ORDER BY nomefamilia;
+                """;
+
+            await using var connection = new NpgsqlConnection(BaseSettings.ConnectionString);
+            var data = await connection.QueryAsync<FamiliaProdutoModel>(sql);
+            return new ObservableCollection<FamiliaProdutoModel>(data);
         }
 
         public async Task<FamiliaProdutoModel> UpdateRespCompraAsync(FamiliaProdutoModel familia)
         {
-            try
+            if (familia.codigofamilia is null)
             {
-                using DatabaseContext db = new();
-                await db.FamiliaProdutos.SingleMergeAsync(familia);
-                db.SaveChanges();
-                return familia;
+                throw new InvalidOperationException("Família não identificada para atualização.");
             }
-            catch (Exception)
-            {
-                throw;
-            }
+
+            const string sql = """
+                UPDATE compras.tblfamiliaprod
+                SET res_compra = @res_compra
+                WHERE codigofamilia = @codigofamilia;
+                """;
+
+            await using var connection = new NpgsqlConnection(BaseSettings.ConnectionString);
+            await connection.ExecuteAsync(sql, familia);
+            return familia;
         }
     }
 }

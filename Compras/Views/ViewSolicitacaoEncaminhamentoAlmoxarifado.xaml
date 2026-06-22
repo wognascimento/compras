@@ -1,0 +1,104 @@
+<UserControl
+    x:Class="Compras.Views.ViewSolicitacaoEncaminhamentoAlmoxarifado"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+    Loaded="UserControl_Loaded"
+    d:DesignHeight="450"
+    d:DesignWidth="1000"
+    mc:Ignorable="d">
+
+    <Border Margin="10" BorderBrush="DarkGray" BorderThickness="1">
+        <Grid Margin="8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Row="0" Grid.ColumnSpan="3" Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock
+                    VerticalAlignment="Center"
+                    FontSize="16"
+                    FontWeight="SemiBold"
+                    Text="ENCAMINHAMENTO ALMOXARIFADO" />
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <telerik:RadButton Margin="0,0,8,0" Click="OnAtualizarPendentes" Content="Atualizar Pendentes" />
+                    <telerik:RadButton Margin="0,0,8,0" Click="OnLimparLote" Content="Limpar Lote" />
+                    <telerik:RadButton Click="OnSalvarConsolidacao" Content="Salvar Consolidação" />
+                </StackPanel>
+            </Grid>
+
+            <GroupBox Grid.Row="1" Grid.Column="0" Header="Solicitações Pendentes">
+                <telerik:RadGridView
+                    x:Name="gridPendentes"
+                    AutoGenerateColumns="False"
+                    CanUserInsertRows="False"
+                    IsReadOnly="True"
+                    ItemsSource="{Binding SolicitacoesPendentes}"
+                    PreviewMouseMove="GridPendentes_PreviewMouseMove"
+                    SelectionMode="Extended"
+                    ShowGroupPanel="False">
+                    <telerik:RadGridView.Columns>
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding cod_item}" Header="Item" Width="70" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding descricao_completa}" Header="Descrição" Width="auto" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding quantidade}" Header="Qtde." DataFormatString="{}{0:N2}" Width="90" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding unidade}" Header="Unid." Width="70" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding saldo_estoque}" Header="Estoque" DataFormatString="{}{0:N2}" Width="90" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding data_solicitacao}" Header="Data Solic." DataFormatString="{}{0:dd/MM/yyyy}" Width="95" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding solicitante}" Header="Solicitante" Width="120" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding cliente}" Header="Cliente" Width="100" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding almox_recebimento}" Header="Almox." Width="90" />
+                    </telerik:RadGridView.Columns>
+                </telerik:RadGridView>
+            </GroupBox>
+
+            <StackPanel Grid.Row="1" Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
+                <telerik:RadButton Margin="0,0,0,8" Click="OnAdicionarSelecionados" Content="&gt;&gt;" Width="60" />
+                <telerik:RadButton Click="OnRemoverSelecionados" Content="&lt;&lt;" Width="60" />
+            </StackPanel>
+
+            <GroupBox Grid.Row="1" Grid.Column="2" Header="Consolidação Almoxarifado" AllowDrop="True" Drop="GroupBox_Drop">
+                <telerik:RadGridView
+                    x:Name="gridConsolidado"
+                    AutoGenerateColumns="False"
+                    CanUserInsertRows="False"
+                    CellEditEnded="GridConsolidado_CellEditEnded"
+                    ItemsSource="{Binding ItensConsolidados}"
+                    SelectionMode="Extended"
+                    ShowGroupPanel="False">
+                    <telerik:RadGridView.Columns>
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding descricao_completa}" Header="Descrição" IsReadOnly="True" Width="auto" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding quantidade_total_solicitada}" Header="Qtde. Sol." DataFormatString="{}{0:N2}" IsReadOnly="True" Width="90" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding quantidade_atendida_estoque}" Header="Atende Estoque" DataFormatString="{}{0:N2}" Width="100" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding quantidade_enviar_compra}" Header="Enviar Compra" DataFormatString="{}{0:N2}" IsReadOnly="True" Width="100" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding unidade}" Header="Unid." IsReadOnly="True" Width="70" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding nomefantasia}" Header="Fornecedor" IsReadOnly="True" Width="120" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding solicitantes}" Header="Solicitante(s)" IsReadOnly="True" Width="180" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding obs_almoxarifado}" Header="Obs. Almox." Width="150" />
+                    </telerik:RadGridView.Columns>
+                </telerik:RadGridView>
+            </GroupBox>
+
+            <TextBlock
+                Grid.Row="2"
+                Grid.ColumnSpan="3"
+                Margin="0,8,0,0"
+                Foreground="DimGray"
+                Text="Arraste itens da grade da esquerda para a grade da direita para consolidar sem redigitar." />
+        </Grid>
+    </Border>
+</UserControl>

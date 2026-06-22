@@ -2,16 +2,16 @@
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFramework>net8.0-windows7.0</TargetFramework>
+		<TargetFramework>net10.0-windows7.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ApplicationIcon>Icones\logo-pink.ico</ApplicationIcon>
 
 		<!-- Configurações de versão -->
-		<Version>1.0.6</Version>
-		<AssemblyVersion>1.0.0.6</AssemblyVersion>
-		<FileVersion>1.0.0.6</FileVersion>
+		<Version>2.0.0</Version>
+		<AssemblyVersion>2.0.0.0</AssemblyVersion>
+		<FileVersion>2.0.0.0</FileVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -65,14 +65,9 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="Refit" Version="8.0.0" />
-		<PackageReference Include="SharpCompress" Version="0.40.0" />
-		<PackageReference Include="squirrel.windows" Version="1.9.0" />
 		<PackageReference Include="syncfusion.ui.wpf.net" Version="27.1.55" />
-		<PackageReference Include="System.DirectoryServices.AccountManagement" Version="9.0.8" />
-		<PackageReference Include="System.Net.Http" Version="4.3.4" />
-		<PackageReference Include="System.Text.Json" Version="9.0.8" />
-		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
-		<PackageReference Include="Telerik.UI.for.Wpf.70.Xaml" Version="2023.2.718" />
+		<PackageReference Include="System.DirectoryServices.AccountManagement" Version="10.0.0" />
+		<PackageReference Include="Telerik.UI.for.Wpf.80.Xaml" Version="2025.2.521" />
 		<PackageReference Include="Z.EntityFramework.Extensions.EFCore" Version="9.103.9.3" />
 	</ItemGroup>
 

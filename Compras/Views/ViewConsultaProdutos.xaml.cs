@@ -1,38 +1,34 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Compras.Utils;
+using Dapper;
+using Npgsql;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace Compras.Views
 {
-    /// <summary>
-    /// Interação lógica para ViewConsultaProdutos.xam
-    /// </summary>
     public partial class ViewConsultaProdutos : UserControl
     {
         public ViewConsultaProdutos()
         {
             InitializeComponent();
-            this.DataContext = new TodosProdutosViewModel();
+            DataContext = new TodosProdutosViewModel();
         }
 
         private async void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
             try
             {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
-                TodosProdutosViewModel vm = (TodosProdutosViewModel)DataContext;
-                vm.Descricoes = await Task.Run(vm.GetDescricaosAsync);
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+                using var _ = UiFeedbackHelper.BeginBusyCursor();
+                var vm = (TodosProdutosViewModel)DataContext;
+                vm.Descricoes = await vm.GetDescricaosAsync();
             }
             catch (Exception ex)
             {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-                MessageBox.Show(ex.Message);
+                UiFeedbackHelper.ShowError(ex);
             }
         }
     }
@@ -41,39 +37,45 @@ namespace Compras.Views
     {
         public DataBaseSettings BaseSettings = DataBaseSettings.Instance;
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
+
         public void RaisePropertyChanged(string propName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
         }
 
-        #region Todos Produtos
-        private DescricaoProducaoModel descricao;
-        public DescricaoProducaoModel Descricao
+        private DescricaoProducaoModel? descricao;
+        public DescricaoProducaoModel? Descricao
         {
-            get { return descricao; }
-            set { descricao = value; RaisePropertyChanged("Descricao"); }
+            get => descricao;
+            set
+            {
+                descricao = value;
+                RaisePropertyChanged(nameof(Descricao));
+            }
         }
-        private ObservableCollection<DescricaoProducaoModel> descricoes;
+
+        private ObservableCollection<DescricaoProducaoModel> descricoes = [];
         public ObservableCollection<DescricaoProducaoModel> Descricoes
         {
-            get { return descricoes; }
-            set { descricoes = value; RaisePropertyChanged("Descricoes"); }
+            get => descricoes;
+            set
+            {
+                descricoes = value;
+                RaisePropertyChanged(nameof(Descricoes));
+            }
         }
-        #endregion
 
         public async Task<ObservableCollection<DescricaoProducaoModel>> GetDescricaosAsync()
         {
-            try
-            {
-                using DatabaseContext db = new();
-                var data = await db.DescricoesProducao.ToListAsync();
-                return new ObservableCollection<DescricaoProducaoModel>(data);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            const string sql = """
+                SELECT *
+                FROM producao.qry3descricoes;
+                """;
+
+            await using var connection = new NpgsqlConnection(BaseSettings.ConnectionString);
+            var data = await connection.QueryAsync<DescricaoProducaoModel>(sql);
+            return new ObservableCollection<DescricaoProducaoModel>(data);
         }
     }
 }

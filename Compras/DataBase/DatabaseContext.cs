@@ -39,6 +39,7 @@ namespace Compras
         public DbSet<BaseCustoModel> BaseCustos { get; set; }
 
         static DatabaseContext() => AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             /*
@@ -59,6 +60,13 @@ namespace Compras
                 options => { options.EnableRetryOnFailure(); }
                 );
             optionsBuilder.EnableSensitiveDataLogging();
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<CondicaoPagamentoParcelaModel>().HasNoKey();
         }
     }
 }

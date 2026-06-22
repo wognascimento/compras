@@ -4,9 +4,6 @@ using Compras.Views;
 using Dapper;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using Squirrel;
-using Syncfusion.SfSkinManager;
-using Syncfusion.Windows.Tools.Controls;
 using Syncfusion.XlsIO;
 using System;
 using System.Collections.ObjectModel;
@@ -18,8 +15,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using Telerik.Windows.Controls;
-using Enum = System.Enum;
-using SizeMode = Syncfusion.SfSkinManager.SizeMode;
 
 namespace Compras
 {
@@ -29,163 +24,45 @@ namespace Compras
     public partial class MainWindow : Window
     {
         DataBaseSettings BaseSettings = DataBaseSettings.Instance;
-        UpdateManager manager;
-        #region Fields
-        private string currentVisualStyle;
-		private string currentSizeMode;
-        #endregion
 
-        #region Properties
-        /// <summary>
-        /// Gets or sets the current visual style.
-        /// </summary>
-        /// <value></value>
-        /// <remarks></remarks>
-        public string CurrentVisualStyle
-        {
-            get
-            {
-                return currentVisualStyle;
-            }
-            set
-            {
-                currentVisualStyle = value;
-                OnVisualStyleChanged();
-            }
-        }
-		
-		/// <summary>
-        /// Gets or sets the current Size mode.
-        /// </summary>
-        /// <value></value>
-        /// <remarks></remarks>
-        public string CurrentSizeMode
-        {
-            get
-            {
-                return currentSizeMode;
-            }
-            set
-            {
-                currentSizeMode = value;
-                OnSizeModeChanged();
-            }
-        }
-        #endregion
         public MainWindow()
         {
             InitializeComponent();
-			this.Loaded += OnLoaded;
             StyleManager.ApplicationTheme = new Windows11Theme();
-
-            //var appSettings = ConfigurationManager.GetSection("appSettings") as NameValueCollection;
-            //if (appSettings[0].Length > 0)
-            //    BaseSettings.Username = appSettings[0];
 
             txtUsername.Text = BaseSettings.Username;
             txtDataBase.Text = BaseSettings.Database;
-
-            //MessageBox.Show(DateTime.Now.Month.ToString());
-
-            
-        }
-		/// <summary>
-        /// Called when [loaded].
-        /// </summary>
-        /// <param name="sender">The sender.</param>
-        /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
-        private async void OnLoaded(object sender, RoutedEventArgs e)
-        {
-            CurrentVisualStyle = "Metro";
-	        CurrentSizeMode = "Default";
-            /*
-            try
-            {
-                manager = await UpdateManager.GitHubUpdateManager(@"https://github.com/wognascimento/compras");
-                var updateInfo = await manager.CheckForUpdate();
-                if (updateInfo.ReleasesToApply.Count > 0)
-                {
-                    RadWindow.Confirm(new DialogParameters()
-                    {
-                        Header = "Atualização",
-                        Content = "Existe uma atualização para o sistema, deseja atualiza?",
-                        Closed = async (object sender, WindowClosedEventArgs e) =>
-                        {
-                            var result = e.DialogResult;
-                            if (result == true)
-                            {
-                                await manager.UpdateApp();
-                                RadWindow.Alert("Sistema atualizado!\nFecha e abre o Sistema, para aplicar a atualização.");
-                            }
-                        }
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                RadWindow.Alert(ex.Message);
-            }
-            */
-        }
-		/// <summary>
-        /// On Visual Style Changed.
-        /// </summary>
-        /// <remarks></remarks>
-        private void OnVisualStyleChanged()
-        {
-            VisualStyles visualStyle = VisualStyles.Default;
-            Enum.TryParse(CurrentVisualStyle, out visualStyle);            
-            if (visualStyle != VisualStyles.Default)
-            {
-                SfSkinManager.ApplyStylesOnApplication = true;
-                SfSkinManager.SetVisualStyle(this, visualStyle);
-                SfSkinManager.ApplyStylesOnApplication = false;
-            }
-        }
-		
-		/// <summary>
-        /// On Size Mode Changed event.
-        /// </summary>
-        /// <remarks></remarks>
-        private void OnSizeModeChanged()
-        {
-            SizeMode sizeMode = SizeMode.Default;
-            Enum.TryParse(CurrentSizeMode, out sizeMode);
-            if (sizeMode != SizeMode.Default)
-            {
-                SfSkinManager.ApplyStylesOnApplication = true;
-                SfSkinManager.SetSizeMode(this, sizeMode);
-                SfSkinManager.ApplyStylesOnApplication = false;
-            }
         }
 
         private void adicionarFilho(object filho, string title, string name)
         {
-            var doc = ExistDocumentInDocumentContainer(name);
-            if (doc == null)
+            var pane = ExistDocumentInDocumentContainer(name);
+            if (pane == null)
             {
-                doc = (FrameworkElement?)filho;
-                DocumentContainer.SetHeader(doc, title);
-                doc.Name = name.ToLower();
-                _mdi.Items.Add(doc);
+                pane = new RadPane
+                {
+                    Header = title,
+                    Name = name.ToLower(),
+                    Content = filho,
+                    CanUserClose = true,
+                    IsSelected = true
+                };
+
+                documentGroup.Items.Add(pane);
+                pane.IsActive = true;
             }
             else
             {
-                //_mdi.RestoreDocument(doc as UIElement);
-                _mdi.ActiveDocument = doc;
+                pane.IsSelected = true;
+                pane.IsActive = true;
             }
         }
 
-        private FrameworkElement ExistDocumentInDocumentContainer(string name_)
+        private RadPane? ExistDocumentInDocumentContainer(string name_)
         {
-            foreach (FrameworkElement element in _mdi.Items)
-            {
-                if (name_.ToLower() == element.Name)
-                {
-                    return element;
-                }
-            }
-            return null;
+            return documentGroup.Items
+                .OfType<RadPane>()
+                .FirstOrDefault(p => string.Equals(p.Name, name_.ToLower(), StringComparison.OrdinalIgnoreCase));
         }
 
         private void OnOpenSolicitacao(object sender, RoutedEventArgs e)
@@ -212,6 +89,16 @@ namespace Compras
             //this._mdi.Items.Add(view);
 
             adicionarFilho(new ViewSolicitacaoEncaminhamento("MATERIAIS"), "ENCAMINHAMENTO SOLICITAÇÃO MATERIAL", "ENCAMINHAMENTO_SOLICITACAO_MATERIAL");
+        }
+
+        private void OnOpenEncaminhamentoAlmoxarifado(object sender, RoutedEventArgs e)
+        {
+            adicionarFilho(new ViewSolicitacaoEncaminhamentoAlmoxarifado(), "ENCAMINHAMENTO ALMOXARIFADO", "ENCAMINHAMENTO_ALMOXARIFADO");
+        }
+
+        private void OnOpenNovoEncaminhamento(object sender, RoutedEventArgs e)
+        {
+            adicionarFilho(new ViewSolicitacaoNovoEncaminhamento("MATERIAIS"), "NOVO ENCAMINHAMENTO DE COMPRAS", "NOVO_ENCAMINHAMENTO_COMPRAS");
         }
 
         private void OnOpenEncaminhamentoServico(object sender, RoutedEventArgs e)
@@ -624,17 +511,6 @@ namespace Compras
             }
         }
 
-        private void _mdi_CloseButtonClick(object sender, CloseButtonEventArgs e)
-        {
-            var tab = (DocumentContainer)sender;
-            _mdi.Items.Remove(tab.ActiveDocument);
-        }
-
-        private void _mdi_CloseAllTabs(object sender, CloseTabEventArgs e)
-        {
-            _mdi.Items.Clear();
-        }
-
         private void OnAlterarUsuario(object sender, MouseButtonEventArgs e)
         {
             Login window = new();
@@ -643,7 +519,8 @@ namespace Compras
             try
             {
                 var appSettings = ConfigurationManager.GetSection("appSettings") as NameValueCollection;
-                BaseSettings.Username = appSettings[0];
+                BaseSettings.Username = appSettings?["Username"];
+                BaseSettings.RefreshConnectionString();
                 txtUsername.Text = BaseSettings.Username;
             }
             catch (Exception ex)
@@ -663,8 +540,9 @@ namespace Compras
                     if (e.PromptResult != null)
                     {
                         BaseSettings.Database = e.PromptResult;
+                        BaseSettings.RefreshConnectionString();
                         txtDataBase.Text = BaseSettings.Database;
-                        _mdi.Items.Clear();
+                        documentGroup.Items.Clear();
                     }
                 }
             });

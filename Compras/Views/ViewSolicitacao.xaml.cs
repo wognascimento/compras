@@ -1,8 +1,6 @@
 ﻿using Compras.Views.PopUp;
-using Microsoft.EntityFrameworkCore;
-using Syncfusion.Data.Extensions;
-using Syncfusion.Windows.Controls.PivotGrid;
-using Syncfusion.Windows.Tools.Controls;
+using Dapper;
+using Npgsql;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -12,6 +10,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Telerik.Windows.Controls;
 
 
 namespace Compras.Views
@@ -130,7 +129,7 @@ namespace Compras.Views
                 Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
 
                 SolicitacaoViewModel vm = (SolicitacaoViewModel)DataContext;
-                switch (((ComboBoxAdv)sender).DisplayMemberPath)
+                switch ((sender as RadComboBox)?.DisplayMemberPath)
                 {
                     case "planilha":
                         vm.DescAdicionais = null;
@@ -176,16 +175,18 @@ namespace Compras.Views
                 return;
             }
 
-            var window = new Window();
-            window.Title = "BUSCAR PRODUTO";
-            window.Height = 600;
-            window.Width = 900;
-            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-            window.WindowStyle = WindowStyle.ToolWindow;
-            window.ResizeMode = ResizeMode.NoResize;
-            window.Content = new PopUpLocalizaProduto(this.DataContext);
-            window.Owner = Window.GetWindow(btnExcluir.Parent); //GetTopParent();
-            window.ShowInTaskbar = false;
+            var window = new Window
+            {
+                Title = "BUSCAR PRODUTO",
+                Height = 600,
+                Width = 900,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                WindowStyle = WindowStyle.ToolWindow,
+                ResizeMode = ResizeMode.NoResize,
+                Content = new PopUpLocalizaProduto(this.DataContext),
+                Owner = Window.GetWindow(btnExcluir.Parent), //GetTopParent();
+                ShowInTaskbar = false
+            };
             window.ShowDialog();
 
             if (vm.Descricao == null)
@@ -268,7 +269,7 @@ namespace Compras.Views
                     //qtde_compra_final = Me.Dados_txtQuantidade
                     //setor = Me.Dados_cmbSetor
                     cliente = txtSigla?.Text,
-                    data_utilizacao = dtSolicitacao.DateTime,
+                    data_utilizacao = dtSolicitacao.SelectedDate,
                     etapa = cbFase.Text,
                     classificacao = cbClassificacao.Text,
                     descricao_dsl = cbDescr.Text,
@@ -325,7 +326,7 @@ namespace Compras.Views
                 item.codcompleadicional = vm.Compledicional.codcompladicional;
                 item.quantidade = double.Parse(txtQuantidade.Text, CultureInfo.GetCultureInfo("pt-BR"));
                 item.cliente = txtSigla?.Text;
-                item.data_utilizacao = dtSolicitacao.DateTime;
+                item.data_utilizacao = dtSolicitacao.SelectedDate;
                 item.etapa = cbFase.Text;
                 item.classificacao = cbClassificacao.Text;
                 item.descricao_dsl = cbDescr.Text;
@@ -360,9 +361,8 @@ namespace Compras.Views
             vm.Compledicional = null;
             vm.BaseCustos = null;
             txtQuantidade.Text = null;
-            dtSolicitacao.DateTime = null;
+            dtSolicitacao.SelectedDate = null;
             cbStatu.SelectedItem = null;
-            cbStatu.SelectedItems = null;
             //cbStatu.SelectedItens = null;
             cbStatu.Text = null;
             idProduto.Text = null;
@@ -583,12 +583,12 @@ namespace Compras.Views
             }
         }
 
-        private async void OnSelectedPlanilha(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private async void OnSelectedPlanilha(object sender, SelectionChangedEventArgs e)
         {
             try
             {
                 SolicitacaoViewModel vm = (SolicitacaoViewModel)DataContext;
-                RelplanModel? planilha = e.NewValue as RelplanModel;
+                RelplanModel? planilha = txtPlanilha.SelectedItem as RelplanModel;
                 Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
 
                 vm.Produtos = new ObservableCollection<ProdutoModel>();
@@ -616,12 +616,12 @@ namespace Compras.Views
             }
         }
 
-        private async void OnSelectedDescricao(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private async void OnSelectedDescricao(object sender, SelectionChangedEventArgs e)
         {
             try
             {
                 SolicitacaoViewModel vm = (SolicitacaoViewModel)DataContext;
-                ProdutoModel? produto = e.NewValue as ProdutoModel;
+                ProdutoModel? produto = txtDescricao.SelectedItem as ProdutoModel;
                 Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
 
                 vm.DescAdicionais = new ObservableCollection<TabelaDescAdicionalModel>();
@@ -645,12 +645,12 @@ namespace Compras.Views
             }
         }
 
-        private async void OnSelectedDescricaoAdicional(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private async void OnSelectedDescricaoAdicional(object sender, SelectionChangedEventArgs e)
         {
             try
             {
                 SolicitacaoViewModel vm = (SolicitacaoViewModel)DataContext;
-                TabelaDescAdicionalModel? adicional = e.NewValue as TabelaDescAdicionalModel;
+                TabelaDescAdicionalModel? adicional = txtDescricaoAdicional.SelectedItem as TabelaDescAdicionalModel;
                 Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
 
                 vm.CompleAdicionais = new ObservableCollection<TblComplementoAdicionalModel>();
@@ -670,17 +670,17 @@ namespace Compras.Views
             }
         }
 
-        private void OnSelectedComplementoAdicional(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private void OnSelectedComplementoAdicional(object sender, SelectionChangedEventArgs e)
         {
             SolicitacaoViewModel vm = (SolicitacaoViewModel)DataContext;
-            TblComplementoAdicionalModel? complemento = e.NewValue as TblComplementoAdicionalModel;
+            TblComplementoAdicionalModel? complemento = txtComplementoAdicional.SelectedItem as TblComplementoAdicionalModel;
             vm.Compledicional = complemento;
             idProduto.Text = complemento?.codcompladicional.ToString();
             unidade.Text = complemento?.unidade;
             txtQuantidade.Focus();
         }
 
-        private async void OnSelectionChanged(object sender, Syncfusion.UI.Xaml.Grid.GridSelectionChangedEventArgs e)
+        private async void OnSelectionChanged(object sender, SelectionChangeEventArgs e)
         {
              
         }
@@ -715,8 +715,8 @@ namespace Compras.Views
                 unidade.Text = vm.Compledicional?.unidade;
                 txtQuantidade.Text = record.qtde_solicitacao.ToString(); //double.Parse(txtQuantidade.Text, CultureInfo.GetCultureInfo("pt-BR"))
 
-                dtSolicitacao.DateTime = record.data_utilizacao;
-                cbStatu.SelectedValue = (from p in vm.Status where p.cod_status == record.cod_status select p).FirstOrDefault();
+                dtSolicitacao.SelectedDate = record.data_utilizacao;
+                cbStatu.SelectedItem = (from p in vm.Status where p.cod_status == record.cod_status select p).FirstOrDefault();
                 txtSolicitante.Text = record.solicitante;
                 txtSigla.Text = record.cliente;
                 txtObservacao.Text = record.obs_solicitacao;
@@ -733,13 +733,13 @@ namespace Compras.Views
 
 
 
-        private async void cbClassificacao_SelectedItemChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private async void cbClassificacao_SelectedItemChanged(object sender, SelectionChangedEventArgs e)
         {
             //GetClassificacoesAsync
             try
             {
                 SolicitacaoViewModel vm = (SolicitacaoViewModel)DataContext;
-                ClassificacaoModel classificacao = (ClassificacaoModel)e.NewValue;
+                ClassificacaoModel classificacao = cbClassificacao.SelectedItem as ClassificacaoModel;
                 Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
                 vm.BaseCustos = await Task.Run(() => vm.GetBaseCustoAsync(classificacao?.classificacao));
                 Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
@@ -966,15 +966,23 @@ namespace Compras.Views
 
         //public SolicitacaoViewModel() { }
 
+        private NpgsqlConnection CreateConnection()
+        {
+            return new NpgsqlConnection(BaseSettings.ConnectionString);
+        }
+
         public async Task<SolicitacaoSolicitanteModel> GetSolicitacaoAsync()
         {
             try
             {
-                using DatabaseContext db = new();
-                var data = await db.SolicitacaoSolicitantes
-                    .Where(b => b.username == BaseSettings.Username)
-                    .FirstOrDefaultAsync();
-                return data;
+                const string sql = """
+                    SELECT *
+                    FROM compras.solicitacao_solicitantes
+                    WHERE username = @Username
+                    LIMIT 1;
+                    """;
+                await using var connection = CreateConnection();
+                return await connection.QuerySingleOrDefaultAsync<SolicitacaoSolicitanteModel>(sql, new { BaseSettings.Username });
             }
             catch (Exception)
             {
@@ -986,8 +994,13 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                var data = await db.Fornecedores.OrderBy(f => f.nomefantasia).ToListAsync();
+                const string sql = """
+                    SELECT *
+                    FROM compras.fornecedores
+                    ORDER BY nomefantasia;
+                    """;
+                await using var connection = CreateConnection();
+                var data = await connection.QueryAsync<Fornecedor>(sql);
                 return new ObservableCollection<Fornecedor>(data);
             }
             catch (Exception)
@@ -1000,9 +1013,35 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                db.SolicitacaoMaterias.Add(solicitacao);
-                await db.SaveChangesAsync();
+                const string sql = """
+                    INSERT INTO compras.solicitacao_material
+                    (
+                        cod_solicitante,
+                        idfornecedor,
+                        data_solicitacao,
+                        almox_recebimento,
+                        status_solicitacao,
+                        data_status,
+                        tipo,
+                        emitido_em,
+                        emitido_por
+                    )
+                    VALUES
+                    (
+                        @cod_solicitante,
+                        @idfornecedor,
+                        @data_solicitacao,
+                        @almox_recebimento,
+                        @status_solicitacao,
+                        @data_status,
+                        @tipo,
+                        @emitido_em,
+                        @emitido_por
+                    )
+                    RETURNING cod_solicitacao;
+                    """;
+                await using var connection = CreateConnection();
+                solicitacao.cod_solicitacao = await connection.ExecuteScalarAsync<long>(sql, solicitacao);
                 return solicitacao;
             }
             catch (Exception)
@@ -1015,9 +1054,22 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                db.SolicitacaoMaterias.Update(solicitacao);
-                await db.SaveChangesAsync();
+                const string sql = """
+                    UPDATE compras.solicitacao_material
+                    SET
+                        cod_solicitante = @cod_solicitante,
+                        idfornecedor = @idfornecedor,
+                        data_solicitacao = @data_solicitacao,
+                        almox_recebimento = @almox_recebimento,
+                        status_solicitacao = @status_solicitacao,
+                        data_status = @data_status,
+                        tipo = @tipo,
+                        emitido_em = @emitido_em,
+                        emitido_por = @emitido_por
+                    WHERE cod_solicitacao = @cod_solicitacao;
+                    """;
+                await using var connection = CreateConnection();
+                await connection.ExecuteAsync(sql, solicitacao);
                 return solicitacao;
             }
             catch (Exception)
@@ -1030,8 +1082,14 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                return await db.SolicitacaoMaterias.FindAsync(idSolicitacao);
+                const string sql = """
+                    SELECT *
+                    FROM compras.solicitacao_material
+                    WHERE cod_solicitacao = @idSolicitacao
+                    LIMIT 1;
+                    """;
+                await using var connection = CreateConnection();
+                return await connection.QuerySingleOrDefaultAsync<SolicitacaoMaterialModel>(sql, new { idSolicitacao });
             }
             catch (Exception)
             {
@@ -1043,8 +1101,14 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                var data = await db.DescricoesProducao.Where(p => p.classe_compra == tipo && p.inativo != "-1").ToListAsync();
+                const string sql = """
+                    SELECT *
+                    FROM producao.qry3descricoes
+                    WHERE classe_compra = @tipo
+                      AND COALESCE(inativo, '') <> '-1';
+                    """;
+                await using var connection = CreateConnection();
+                var data = await connection.QueryAsync<DescricaoProducaoModel>(sql, new { tipo });
                 return new ObservableCollection<DescricaoProducaoModel>(data);
             }
             catch (Exception)
@@ -1057,9 +1121,16 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                var data = await db.DescricoesProducao.Where(p => p.classe_compra == tipo && p.codcompladicional == codcompladicional && p.inativo != "-1").FirstOrDefaultAsync(); ;
-                return data;
+                const string sql = """
+                    SELECT *
+                    FROM producao.qry3descricoes
+                    WHERE classe_compra = @tipo
+                      AND codcompladicional = @codcompladicional
+                      AND COALESCE(inativo, '') <> '-1'
+                    LIMIT 1;
+                    """;
+                await using var connection = CreateConnection();
+                return await connection.QuerySingleOrDefaultAsync<DescricaoProducaoModel>(sql, new { tipo, codcompladicional });
             }
             catch (Exception)
             {
@@ -1071,8 +1142,13 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                var data = await db.Planilhas.OrderBy(p => p.planilha).ToListAsync();
+                const string sql = """
+                    SELECT *
+                    FROM producao.relplan
+                    ORDER BY planilha;
+                    """;
+                await using var connection = CreateConnection();
+                var data = await connection.QueryAsync<RelplanModel>(sql);
                 return new ObservableCollection<RelplanModel>(data);
             }
             catch (Exception)
@@ -1085,12 +1161,15 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                var data = await db.Produtos
-                    .OrderBy(c => c.descricao)
-                    .Where(c => c.planilha.Equals(planilha))
-                    .Where(c => c.inativo != "-1")
-                    .ToListAsync();
+                const string sql = """
+                    SELECT *
+                    FROM producao.produtos
+                    WHERE planilha = @planilha
+                      AND COALESCE(inativo, '') <> '-1'
+                    ORDER BY descricao;
+                    """;
+                await using var connection = CreateConnection();
+                var data = await connection.QueryAsync<ProdutoModel>(sql, new { planilha });
                 return new ObservableCollection<ProdutoModel>(data);
             }
             catch (Exception)
@@ -1103,12 +1182,15 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                var data = await db.Descricoes
-                    .OrderBy(c => c.descricao_adicional)
-                    .Where(c => c.codigoproduto.Equals(codigo))
-                    .Where(c => c.inativo != "-1")
-                    .ToListAsync();
+                const string sql = """
+                    SELECT *
+                    FROM producao.tabela_desc_adicional
+                    WHERE codigoproduto = @codigo
+                      AND COALESCE(inativo, '') <> '-1'
+                    ORDER BY descricao_adicional;
+                    """;
+                await using var connection = CreateConnection();
+                var data = await connection.QueryAsync<TabelaDescAdicionalModel>(sql, new { codigo });
                 return new ObservableCollection<TabelaDescAdicionalModel>(data);
             }
             catch (Exception)
@@ -1121,12 +1203,15 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                var data = await db.Complementos
-                    .OrderBy(c => c.complementoadicional)
-                    .Where(c => c.coduniadicional.Equals(coduniadicional))
-                    .Where(c => c.inativo != "-1")
-                    .ToListAsync();
+                const string sql = """
+                    SELECT *
+                    FROM producao.tblcomplementoadicional
+                    WHERE coduniadicional = @coduniadicional
+                      AND COALESCE(inativo, '') <> '-1'
+                    ORDER BY complementoadicional;
+                    """;
+                await using var connection = CreateConnection();
+                var data = await connection.QueryAsync<TblComplementoAdicionalModel>(sql, new { coduniadicional });
                 return new ObservableCollection<TblComplementoAdicionalModel>(data);
             }
             catch (Exception)
@@ -1139,10 +1224,13 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                var data = await db.SolicitacaoStatus
-                    .OrderBy(c => c.cod_status)
-                    .ToListAsync();
+                const string sql = """
+                    SELECT *
+                    FROM compras.solicitacao_status
+                    ORDER BY cod_status;
+                    """;
+                await using var connection = CreateConnection();
+                var data = await connection.QueryAsync<SolicitacaoStatusModel>(sql);
                 return new ObservableCollection<SolicitacaoStatusModel>(data);
             }
             catch (Exception)
@@ -1155,8 +1243,13 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                var data = await db.Siglas.OrderBy(c => c.sigla_serv).ToListAsync();
+                const string sql = """
+                    SELECT *
+                    FROM producao.view_sigla_chkgeral
+                    ORDER BY sigla_serv;
+                    """;
+                await using var connection = CreateConnection();
+                var data = await connection.QueryAsync<SiglaChkListModel>(sql);
                 return new ObservableCollection<SiglaChkListModel>(data);
             }
             catch (Exception)
@@ -1169,9 +1262,14 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                var dados = await db.Planilhas.FindAsync(planilha);
-                return dados;
+                const string sql = """
+                    SELECT *
+                    FROM producao.relplan
+                    WHERE planilha = @planilha
+                    LIMIT 1;
+                    """;
+                await using var connection = CreateConnection();
+                return await connection.QuerySingleOrDefaultAsync<RelplanModel>(sql, new { planilha });
             }
             catch (Exception)
             {
@@ -1183,8 +1281,14 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                return await db.Produtos.FindAsync(id);
+                const string sql = """
+                    SELECT *
+                    FROM producao.produtos
+                    WHERE codigo = @id
+                    LIMIT 1;
+                    """;
+                await using var connection = CreateConnection();
+                return await connection.QuerySingleOrDefaultAsync<ProdutoModel>(sql, new { id });
             }
             catch (Exception)
             {
@@ -1196,8 +1300,14 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                return await db.Descricoes.FindAsync(id);
+                const string sql = """
+                    SELECT *
+                    FROM producao.tabela_desc_adicional
+                    WHERE coduniadicional = @id
+                    LIMIT 1;
+                    """;
+                await using var connection = CreateConnection();
+                return await connection.QuerySingleOrDefaultAsync<TabelaDescAdicionalModel>(sql, new { id });
             }
             catch (Exception)
             {
@@ -1209,8 +1319,14 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                return await db.Complementos.FindAsync(id);
+                const string sql = """
+                    SELECT *
+                    FROM producao.tblcomplementoadicional
+                    WHERE codcompladicional = @id
+                    LIMIT 1;
+                    """;
+                await using var connection = CreateConnection();
+                return await connection.QuerySingleOrDefaultAsync<TblComplementoAdicionalModel>(sql, new { id });
             }
             catch (Exception)
             {
@@ -1222,8 +1338,14 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                return await db.SolicitacaoMateriaisItens.FindAsync(id);
+                const string sql = """
+                    SELECT *
+                    FROM compras.solicitacao_material_itens
+                    WHERE cod_item = @id
+                    LIMIT 1;
+                    """;
+                await using var connection = CreateConnection();
+                return await connection.QuerySingleOrDefaultAsync<SolicitacaoMaterialItemModel>(sql, new { id });
             }
             catch (Exception)
             {
@@ -1235,9 +1357,163 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                db.SolicitacaoMateriaisItens.Add(item);
-                await db.SaveChangesAsync();
+                const string sql = """
+                    INSERT INTO compras.solicitacao_material_itens
+                    (
+                        codcompleadicional,
+                        quantidade,
+                        setor,
+                        cliente,
+                        data_utilizacao,
+                        n_servico,
+                        codcentro_custo,
+                        sugestao_fornecedor,
+                        amostra,
+                        cod_status,
+                        obs_solicitacao,
+                        cod_solicitacao,
+                        inserido_em,
+                        inserido_por,
+                        enviar_compra,
+                        saldo_atende,
+                        informado_por,
+                        data_informado,
+                        quantidade_compra,
+                        obs_almoxarifado,
+                        enviado_compra,
+                        enviado_compra_por,
+                        enviado_compra_em,
+                        enviar_pedido,
+                        enviado_pedido_por,
+                        enviado_pedido_em,
+                        observacao_compra,
+                        idpedido,
+                        coddetalhes,
+                        atendido,
+                        atendido_por,
+                        atendido_em,
+                        atendido_parcial,
+                        iddetpedido,
+                        status_compra,
+                        codfornecedor,
+                        codempresa,
+                        codlocalcompra,
+                        data_pedido_gerado,
+                        tipo,
+                        codprodutocompra,
+                        resp_compra,
+                        qtde_compra_final,
+                        preco,
+                        aprovacao,
+                        aprovado_por,
+                        aprovado_em,
+                        etapa,
+                        classificacao,
+                        descricao_dsl,
+                        id_cond_pagamento,
+                        classificacao_cipolatti,
+                        novo_centro_custo,
+                        classif_financeiro,
+                        recebido,
+                        recebido_por,
+                        recebido_em,
+                        numero_nf,
+                        origem,
+                        data_entrega,
+                        data_emissao_nf,
+                        solicitante_final,
+                        linha_fluxo,
+                        alterado_por,
+                        alterado_em,
+                        subclassif,
+                        classif,
+                        orientacao_compra,
+                        orientacao_roteiro,
+                        solicitante,
+                        finalizado,
+                        finalizado_por,
+                        finalizado_em
+                    )
+                    VALUES
+                    (
+                        @codcompleadicional,
+                        @quantidade,
+                        @setor,
+                        @cliente,
+                        @data_utilizacao,
+                        @n_servico,
+                        @codcentro_custo,
+                        @sugestao_fornecedor,
+                        @amostra,
+                        @cod_status,
+                        @obs_solicitacao,
+                        @cod_solicitacao,
+                        @inserido_em,
+                        @inserido_por,
+                        @enviar_compra,
+                        @saldo_atende,
+                        @informado_por,
+                        @data_informado,
+                        @quantidade_compra,
+                        @obs_almoxarifado,
+                        @enviado_compra,
+                        @enviado_compra_por,
+                        @enviado_compra_em,
+                        @enviar_pedido,
+                        @enviado_pedido_por,
+                        @enviado_pedido_em,
+                        @observacao_compra,
+                        @idpedido,
+                        @coddetalhes,
+                        @atendido,
+                        @atendido_por,
+                        @atendido_em,
+                        @atendido_parcial,
+                        @iddetpedido,
+                        @status_compra,
+                        @codfornecedor,
+                        @codempresa,
+                        @codlocalcompra,
+                        @data_pedido_gerado,
+                        @tipo,
+                        @codprodutocompra,
+                        @resp_compra,
+                        @qtde_compra_final,
+                        @preco,
+                        @aprovacao,
+                        @aprovado_por,
+                        @aprovado_em,
+                        @etapa,
+                        @classificacao,
+                        @descricao_dsl,
+                        @id_cond_pagamento,
+                        @classificacao_cipolatti,
+                        @novo_centro_custo,
+                        @classif_financeiro,
+                        @recebido,
+                        @recebido_por,
+                        @recebido_em,
+                        @numero_nf,
+                        @origem,
+                        @data_entrega,
+                        @data_emissao_nf,
+                        @solicitante_final,
+                        @linha_fluxo,
+                        @alterado_por,
+                        @alterado_em,
+                        @subclassif,
+                        @classif,
+                        @orientacao_compra,
+                        @orientacao_roteiro,
+                        @solicitante,
+                        @finalizado,
+                        @finalizado_por,
+                        @finalizado_em
+                    )
+                    RETURNING cod_item;
+                    """;
+                await using var connection = CreateConnection();
+                item.cod_item = await connection.ExecuteScalarAsync<long>(sql, item);
                 return item;
             }
             catch (Exception)
@@ -1250,9 +1526,86 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                db.SolicitacaoMateriaisItens.Update(item);
-                await db.SaveChangesAsync();
+                const string sql = """
+                    UPDATE compras.solicitacao_material_itens
+                    SET
+                        codcompleadicional = @codcompleadicional,
+                        quantidade = @quantidade,
+                        setor = @setor,
+                        cliente = @cliente,
+                        data_utilizacao = @data_utilizacao,
+                        n_servico = @n_servico,
+                        codcentro_custo = @codcentro_custo,
+                        sugestao_fornecedor = @sugestao_fornecedor,
+                        amostra = @amostra,
+                        cod_status = @cod_status,
+                        obs_solicitacao = @obs_solicitacao,
+                        cod_solicitacao = @cod_solicitacao,
+                        inserido_em = @inserido_em,
+                        inserido_por = @inserido_por,
+                        enviar_compra = @enviar_compra,
+                        saldo_atende = @saldo_atende,
+                        informado_por = @informado_por,
+                        data_informado = @data_informado,
+                        quantidade_compra = @quantidade_compra,
+                        obs_almoxarifado = @obs_almoxarifado,
+                        enviado_compra = @enviado_compra,
+                        enviado_compra_por = @enviado_compra_por,
+                        enviado_compra_em = @enviado_compra_em,
+                        enviar_pedido = @enviar_pedido,
+                        enviado_pedido_por = @enviado_pedido_por,
+                        enviado_pedido_em = @enviado_pedido_em,
+                        observacao_compra = @observacao_compra,
+                        idpedido = @idpedido,
+                        coddetalhes = @coddetalhes,
+                        atendido = @atendido,
+                        atendido_por = @atendido_por,
+                        atendido_em = @atendido_em,
+                        atendido_parcial = @atendido_parcial,
+                        iddetpedido = @iddetpedido,
+                        status_compra = @status_compra,
+                        codfornecedor = @codfornecedor,
+                        codempresa = @codempresa,
+                        codlocalcompra = @codlocalcompra,
+                        data_pedido_gerado = @data_pedido_gerado,
+                        tipo = @tipo,
+                        codprodutocompra = @codprodutocompra,
+                        resp_compra = @resp_compra,
+                        qtde_compra_final = @qtde_compra_final,
+                        preco = @preco,
+                        aprovacao = @aprovacao,
+                        aprovado_por = @aprovado_por,
+                        aprovado_em = @aprovado_em,
+                        etapa = @etapa,
+                        classificacao = @classificacao,
+                        descricao_dsl = @descricao_dsl,
+                        id_cond_pagamento = @id_cond_pagamento,
+                        classificacao_cipolatti = @classificacao_cipolatti,
+                        novo_centro_custo = @novo_centro_custo,
+                        classif_financeiro = @classif_financeiro,
+                        recebido = @recebido,
+                        recebido_por = @recebido_por,
+                        recebido_em = @recebido_em,
+                        numero_nf = @numero_nf,
+                        origem = @origem,
+                        data_entrega = @data_entrega,
+                        data_emissao_nf = @data_emissao_nf,
+                        solicitante_final = @solicitante_final,
+                        linha_fluxo = @linha_fluxo,
+                        alterado_por = @alterado_por,
+                        alterado_em = @alterado_em,
+                        subclassif = @subclassif,
+                        classif = @classif,
+                        orientacao_compra = @orientacao_compra,
+                        orientacao_roteiro = @orientacao_roteiro,
+                        solicitante = @solicitante,
+                        finalizado = @finalizado,
+                        finalizado_por = @finalizado_por,
+                        finalizado_em = @finalizado_em
+                    WHERE cod_item = @cod_item;
+                    """;
+                await using var connection = CreateConnection();
+                await connection.ExecuteAsync(sql, item);
                 return item;
             }
             catch (Exception)
@@ -1265,14 +1618,12 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                var Item = new SolicitacaoMaterialItemModel()
-                {
-                    cod_item = codItem
-                };
-                db.SolicitacaoMateriaisItens.Remove(Item);
-                await db.SaveChangesAsync();
-                //return solicitacao;
+                const string sql = """
+                    DELETE FROM compras.solicitacao_material_itens
+                    WHERE cod_item = @codItem;
+                    """;
+                await using var connection = CreateConnection();
+                await connection.ExecuteAsync(sql, new { codItem });
             }
             catch (Exception)
             {
@@ -1284,11 +1635,14 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                var data = await db.QrySolicitacaoMateriaisItens
-                    .Where(b => b.cod_solicitacao == cod_solicitacao)
-                    .OrderBy(c => c.cod_item)
-                    .ToListAsync();
+                const string sql = """
+                    SELECT *
+                    FROM compras.qry_solicitacao_itenssolicitados
+                    WHERE cod_solicitacao = @cod_solicitacao
+                    ORDER BY cod_item;
+                    """;
+                await using var connection = CreateConnection();
+                var data = await connection.QueryAsync<SolicitacaoItenSolicitadoModel>(sql, new { cod_solicitacao });
                 return new ObservableCollection<SolicitacaoItenSolicitadoModel>(data);
             }
             catch (Exception)
@@ -1301,10 +1655,13 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                var data = await db.Fases
-                    .OrderBy(c => c.fase)
-                    .ToListAsync();
+                const string sql = """
+                    SELECT *
+                    FROM operacional.tblfases
+                    ORDER BY fase;
+                    """;
+                await using var connection = CreateConnection();
+                var data = await connection.QueryAsync<FaseModel>(sql);
                 return new ObservableCollection<FaseModel>(data);
             }
             catch (Exception)
@@ -1317,10 +1674,13 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                var data = await db.Classificacoes
-                    .OrderBy(c => c.classificacao)
-                    .ToListAsync();
+                const string sql = """
+                    SELECT *
+                    FROM operacional.tblclassificacao
+                    ORDER BY classificacao;
+                    """;
+                await using var connection = CreateConnection();
+                var data = await connection.QueryAsync<ClassificacaoModel>(sql);
                 return new ObservableCollection<ClassificacaoModel>(data);
             }
             catch (Exception)
@@ -1333,11 +1693,14 @@ namespace Compras.Views
         {
             try
             {
-                using DatabaseContext db = new();
-                var data = await db.BaseCustos
-                    .Where(b => b.tipo == classificacao)
-                    .OrderBy(c => c.descr)
-                    .ToListAsync();
+                const string sql = """
+                    SELECT *
+                    FROM operacional.tblbasecustos
+                    WHERE tipo = @classificacao
+                    ORDER BY descr;
+                    """;
+                await using var connection = CreateConnection();
+                var data = await connection.QueryAsync<BaseCustoModel>(sql, new { classificacao });
                 return new ObservableCollection<BaseCustoModel>(data);
             }
             catch (Exception)

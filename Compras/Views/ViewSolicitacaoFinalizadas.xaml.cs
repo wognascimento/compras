@@ -1,72 +1,68 @@
-﻿using Syncfusion.UI.Xaml.Grid;
+using Compras.Utils;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
+using Telerik.Windows.Controls;
+using Telerik.Windows.Controls.GridView;
 
 namespace Compras.Views
 {
-    /// <summary>
-    /// Interação lógica para ViewSolicitacaoFinalizadas.xam
-    /// </summary>
-    /// 
     public partial class ViewSolicitacaoFinalizadas : UserControl
     {
-
         private DataBaseSettings BaseSettings = DataBaseSettings.Instance;
 
         public ViewSolicitacaoFinalizadas()
         {
             InitializeComponent();
-            this.DataContext = new SolicitacaoEncaminhadaViewModel();
+            DataContext = new SolicitacaoEncaminhadaViewModel();
         }
 
         private async void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
-            SolicitacaoEncaminhadaViewModel vm = (SolicitacaoEncaminhadaViewModel)DataContext;
+            var vm = (SolicitacaoEncaminhadaViewModel)DataContext;
             try
             {
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
-                vm.SolicitacoesEncaminhadas = await Task.Run(vm.GetSolicitacaoFinalizadasAsync);
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-
+                using var _ = UiFeedbackHelper.BeginBusyCursor();
+                vm.SolicitacoesEncaminhadas = await vm.GetSolicitacaoFinalizadasAsync();
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
-                Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
+                UiFeedbackHelper.ShowError(ex);
             }
         }
 
-        private async void itensSolicitados_CurrentCellValueChanged(object sender, Syncfusion.UI.Xaml.Grid.CurrentCellValueChangedEventArgs e)
+        private async void itensSolicitados_RowEditEnded(object sender, GridViewRowEditEndedEventArgs e)
         {
-            SolicitacaoEncaminhadaViewModel vm = (SolicitacaoEncaminhadaViewModel)DataContext;
-            SfDataGrid? grid = sender as SfDataGrid;
-            int columnindex = grid.ResolveToGridVisibleColumnIndex(e.RowColumnIndex.ColumnIndex);
-            var column = grid.Columns[columnindex];
-            var rowIndex = grid.ResolveToRecordIndex(e.RowColumnIndex.RowIndex);
-            var record = grid.View.Records[rowIndex].Data as SolicitacaoEncaminhadaModel;
+            if (e.EditAction != GridViewEditAction.Commit || e.NewData is not SolicitacaoEncaminhadaModel record)
+            {
+                return;
+            }
 
-            if (column.GetType() == typeof(GridCheckBoxColumn) && column.MappingName == "finalizado")
+            if (record.finalizado == true)
             {
                 record.finalizado_por = BaseSettings.Username;
                 record.finalizado_em = DateTime.Now;
+            }
+            else
+            {
+                record.finalizado = false;
+                record.finalizado_por = null;
+                record.finalizado_em = null;
+            }
 
-                try
-                {
-                    Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
-                    await Task.Run(() => vm.FinalizarItemSolicitadoAsync(record));
+            try
+            {
+                using var _ = UiFeedbackHelper.BeginBusyCursor();
+                var vm = (SolicitacaoEncaminhadaViewModel)DataContext;
+                await vm.FinalizarItemSolicitadoAsync(record);
+                if (record.finalizado == false)
                     vm.SolicitacoesEncaminhadas.Remove(record);
-                    Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message);
-                    Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-                }
+            }
+            catch (Exception ex)
+            {
+                UiFeedbackHelper.ShowError(ex);
             }
         }
-
     }
 }
