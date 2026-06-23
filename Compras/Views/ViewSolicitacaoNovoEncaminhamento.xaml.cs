@@ -2,7 +2,7 @@ using Compras.DataBase.Model;
 using Dapper;
 using Newtonsoft.Json;
 using Npgsql;
-using Syncfusion.XlsIO;
+using ClosedXML.Excel;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -433,40 +433,38 @@ namespace Compras.Views
 
             try
             {
-                using ExcelEngine excelEngine = new();
-                IWorkbook workbook = excelEngine.Excel.Workbooks.Open(caminhoModelo, ExcelParseOptions.Default, false, "1@3mudar");
-                IWorksheet worksheet = workbook.Worksheets[0];
+                using var workbook = new XLWorkbook(caminhoModelo);
+                var worksheet = workbook.Worksheet(1);
 
-                worksheet.Range["E4"].Text = pedido.idpedido.ToString();
-                worksheet.Range["G4"].Text = pedido.datapedido?.ToString("dd/MM/yyyy");
-                worksheet.Range["C7"].Text = fornecedor?.ToString() ?? "#N/D";
+                worksheet.Cell("E4").Value = pedido.idpedido?.ToString() ?? string.Empty;
+                worksheet.Cell("G4").Value = pedido.datapedido?.ToString("dd/MM/yyyy") ?? string.Empty;
+                worksheet.Cell("C7").Value = fornecedor?.ToString() ?? "#N/D";
 
                 for (var i = 0; i < ItensPedido.Count; i++)
                 {
                     var item = ItensPedido[i];
                     var linha = i + primeiraLinha;
-                    worksheet.Range[$"A{linha}"].Text = item.codcompleadicional?.ToString();
-                    worksheet.Range[$"B{linha}"].Text = item.descricao_completa;
-                    worksheet.Range[$"F{linha}"].Number = item.quantidade;
-                    worksheet.Range[$"E{linha}"].Number = item.preco;
-                    worksheet.Range[$"J{linha}"].Text = JsonConvert.SerializeObject(
+                    worksheet.Cell($"A{linha}").Value = item.codcompleadicional?.ToString() ?? string.Empty;
+                    worksheet.Cell($"B{linha}").Value = item.descricao_completa ?? string.Empty;
+                    worksheet.Cell($"F{linha}").Value = item.quantidade;
+                    worksheet.Cell($"E{linha}").Value = item.preco;
+                    worksheet.Cell($"J{linha}").Value = JsonConvert.SerializeObject(
                         item.codigos_itens.Select(codItem => new { cod_item = codItem }));
                 }
 
                 var fornecedores = await GetFornecedoresAsync();
-                workbook.Worksheets[1].ImportData(fornecedores, 1, 1, true);
-                worksheet.Names.Add("fornecedores").RefersToRange = worksheet.Range["fornecedores!$2:$1048576"];
+                Compras.Utils.ClosedXmlHelper.ImportarDados(workbook.Worksheet(2), fornecedores);
+                Compras.Utils.ClosedXmlHelper.DefinirNome(workbook, "fornecedores", workbook.Worksheet(2));
 
                 var condicoes = await GetCondicoesAsync();
-                workbook.Worksheets[2].ImportData(condicoes, 1, 1, true);
-                worksheet.Names.Add("condicoes").RefersToRange = worksheet.Range["condicoes!$2:$1048576"];
+                Compras.Utils.ClosedXmlHelper.ImportarDados(workbook.Worksheet(3), condicoes);
+                Compras.Utils.ClosedXmlHelper.DefinirNome(workbook, "condicoes", workbook.Worksheet(3));
 
                 var empresas = await GetEmpresasAsync();
-                workbook.Worksheets[3].ImportData(empresas, 1, 1, true);
-                worksheet.Names.Add("empresas").RefersToRange = worksheet.Range["empresas!$2:$1048576"];
+                Compras.Utils.ClosedXmlHelper.ImportarDados(workbook.Worksheet(4), empresas);
+                Compras.Utils.ClosedXmlHelper.DefinirNome(workbook, "empresas", workbook.Worksheet(4));
 
                 workbook.SaveAs(caminhoSaida);
-                workbook.Close();
                 return caminhoSaida;
             }
             catch

@@ -1,10 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System;
+﻿using System;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Compras
 {
-    [Keyless]
     [Table("qry_solicitacao_itenssolicitados", Schema = "compras")]
     public class SolicitacaoItenSolicitadoModel
     {

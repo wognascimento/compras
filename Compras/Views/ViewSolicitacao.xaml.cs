@@ -32,14 +32,16 @@ namespace Compras.Views
         {
             try
             {
-                var window = new Window();
-                window.Title = "CRIAR NOVA SOLICITAÇÃO";
-                window.Height = 150;
-                window.Width = 700;
-                window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-                window.WindowStyle = WindowStyle.ToolWindow;
-                window.ResizeMode = ResizeMode.NoResize;
-                window.Content = new PopUpNovaSolicitacao(this.DataContext);
+                var window = new Window
+                {
+                    Title = "CRIAR NOVA SOLICITAÇÃO",
+                    Height = 150,
+                    Width = 700,
+                    WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                    WindowStyle = WindowStyle.ToolWindow,
+                    ResizeMode = ResizeMode.NoResize,
+                    Content = new PopUpNovaSolicitacao(this.DataContext)
+                };
                 window.ShowDialog();
 
                 SolicitacaoViewModel vm = (SolicitacaoViewModel)DataContext;

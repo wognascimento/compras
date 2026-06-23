@@ -46,5 +46,11 @@ namespace Compras
         public bool? finalizado { get; set; }
         public string? finalizado_por { get; set; }
         public DateTime? finalizado_em { get; set; }
+        public string? status_fluxo { get; set; }
+        public int? id_almox_item { get; set; }
+        public double? quantidade_atendida_estoque { get; set; }
+        public double? quantidade_enviada_compra { get; set; }
+        public string? processado_almox_por { get; set; }
+        public DateTime? processado_almox_em { get; set; }
     }
 }

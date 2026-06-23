@@ -13,6 +13,8 @@ namespace Compras.Views.PopUp
 {
     public partial class PopUpLocalizaProduto : UserControl
     {
+        private ICollectionView? _descricoesView;
+
         public PopUpLocalizaProduto(object dataContext)
         {
             InitializeComponent();
@@ -37,6 +39,8 @@ namespace Compras.Views.PopUp
                 using var _ = UiFeedbackHelper.BeginBusyCursor();
                 var vm = (SolicitacaoViewModel)DataContext;
                 vm.Descricoes = await GetDescricoesAsync(vm?.SolicitacaoMaterial?.tipo);
+                _descricoesView = CollectionViewSource.GetDefaultView(vm.Descricoes);
+                dataGrid.ItemsSource = _descricoesView;
                 ApplyFilter();
             }
             catch (Exception ex)
@@ -93,7 +97,7 @@ namespace Compras.Views.PopUp
 
         private void ApplyFilter()
         {
-            if (CollectionViewSource.GetDefaultView(dataGrid.ItemsSource) is not ICollectionView view)
+            if (_descricoesView is null)
             {
                 return;
             }
@@ -101,12 +105,12 @@ namespace Compras.Views.PopUp
             var searchText = txtBusca.Text?.Trim();
             if (string.IsNullOrWhiteSpace(searchText))
             {
-                view.Filter = null;
-                view.Refresh();
+                _descricoesView.Filter = null;
+                _descricoesView.Refresh();
                 return;
             }
 
-            view.Filter = item =>
+            _descricoesView.Filter = item =>
             {
                 if (item is not DescricaoProducaoModel descricao)
                 {
@@ -119,7 +123,7 @@ namespace Compras.Views.PopUp
                     || Contains(descricao.familia, searchText);
             };
 
-            view.Refresh();
+            _descricoesView.Refresh();
         }
 
         private static bool Contains(string? source, string searchText)

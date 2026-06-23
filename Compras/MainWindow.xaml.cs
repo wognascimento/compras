@@ -1,10 +1,10 @@
 ﻿using Compras.DataBase.DTOs;
 using Compras.DataBase.Model;
+using Compras.Utils;
 using Compras.Views;
+using ClosedXML.Excel;
 using Dapper;
-using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using Syncfusion.XlsIO;
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -24,6 +24,17 @@ namespace Compras
     public partial class MainWindow : Window
     {
         DataBaseSettings BaseSettings = DataBaseSettings.Instance;
+
+        private async void OnAtualizarSistemaClick(object sender, Telerik.Windows.RadRoutedEventArgs e)
+        {
+            await ((App)Application.Current).CheckForUpdatesAsync(true);
+        }
+
+        private void OnSobreSistemaClick(object sender, Telerik.Windows.RadRoutedEventArgs e)
+        {
+            var version = ((App)Application.Current).CurrentVersion;
+            MessageBox.Show($"Sistema Integrado de Gerenciamento - Compras\n\nVersão atual: {version}", "Sobre o sistema", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
 
         public MainWindow()
         {
@@ -67,27 +78,11 @@ namespace Compras
 
         private void OnOpenSolicitacao(object sender, RoutedEventArgs e)
         {
-            //ViewSolicitacao view = new();
-            //DocumentContainer.SetHeader(view, "SOLICITAÇÃO MATERIAL/SERVIÇO");
-            //DocumentContainer.SetSizetoContentInMDI(view, true);
-            //DocumentContainer.SetMDIBounds(view, new Rect((this._mdi.ActualWidth - 1000.0) / 2.0, (this._mdi.ActualHeight - 700.0) / 2.0, 1000.0, 700.0));
-            //DocumentContainer.SetMDIWindowState(view, MDIWindowState.Maximized);
-            //this._mdi.CanMDIMaximize = false;
-            //this._mdi.Items.Add(view);
-
             adicionarFilho(new ViewSolicitacao(), "SOLICITAÇÃO MATERIAL/SERVIÇO", "SOLICITACAO_MATERIAL_SERVICO");
         }
 
         private void OnOpenEncaminhamento(object sender, RoutedEventArgs e)
         {
-            //ViewSolicitacaoEncaminhamento view = new();
-            //DocumentContainer.SetHeader(view, "ENCAMINHAMENTO SOLICITAÇÃO MATERIAL");
-            //DocumentContainer.SetSizetoContentInMDI(view, true);
-            //DocumentContainer.SetMDIBounds(view, new Rect((this._mdi.ActualWidth - 1000.0) / 2.0, (this._mdi.ActualHeight - 700.0) / 2.0, 1000.0, 700.0));
-            //DocumentContainer.SetMDIWindowState(view, MDIWindowState.Maximized);
-            //this._mdi.CanMDIMaximize = true;
-            //this._mdi.Items.Add(view);
-
             adicionarFilho(new ViewSolicitacaoEncaminhamento("MATERIAIS"), "ENCAMINHAMENTO SOLICITAÇÃO MATERIAL", "ENCAMINHAMENTO_SOLICITACAO_MATERIAL");
         }
 
@@ -144,24 +139,20 @@ namespace Compras
 
                     string filename = dialog.FileName;
 
-                    using ExcelEngine excelEngine = new ExcelEngine();
-                    IApplication application = excelEngine.Excel;
-                    application.DefaultVersion = ExcelVersion.Xlsx;
-                    //IWorkbook workbook = application.Workbooks.Open(filename);
-                    IWorkbook workbook = application.Workbooks.OpenReadOnly(filename);
-                    IWorksheet worksheet = workbook.Worksheets[0];
+                    using var workbook = new XLWorkbook(filename);
+                    var worksheet = workbook.Worksheet(1);
 
                     //2206
 
                     //Access a cell value from Excel
-                    var pedido = worksheet.Range["E4"].Value;
-                    var PedidoDt = worksheet.Range["G4"].Value;
-                    var PedidoEntrega = worksheet.Range["C9"].Value;
-                    var PedidoDnota = worksheet.Range["E9"].Value;
-                    var PedidoNnota = worksheet.Range["G9"].Value;
-                    var empresa = worksheet.Range["C6"].Value;
-                    var fornecedor = worksheet.Range["C7"].Value;
-                    var condicoes = worksheet.Range["D8"].Value;
+                    var pedido = worksheet.Cell("E4").GetString();
+                    var PedidoDt = worksheet.Cell("G4").GetString();
+                    var PedidoEntrega = worksheet.Cell("C9").GetString();
+                    var PedidoDnota = worksheet.Cell("E9").GetString();
+                    var PedidoNnota = worksheet.Cell("G9").GetString();
+                    var empresa = worksheet.Cell("C6").GetString();
+                    var fornecedor = worksheet.Cell("C7").GetString();
+                    var condicoes = worksheet.Cell("D8").GetString();
 
                     if (pedido == "" || pedido == "#N/A")
                     {
@@ -207,26 +198,26 @@ namespace Compras
                     ObservableCollection<PedidoDetalhesModel> produtos = [];
                     for (int i = 12; i < 31; i++)
                     {
-                       if (worksheet.Range[$"A{i}"].Value == "" || worksheet.Range[$"A{i}"].Value == "#N/A")
+                       if (worksheet.Cell($"A{i}").GetString() == "" || worksheet.Cell($"A{i}").GetString() == "#N/A")
                             break;
 
-                       if(worksheet.Range[$"E{i}"].Value == "" || worksheet.Range[$"E{i}"].Value == "#N/A")
+                       if(worksheet.Cell($"E{i}").GetString() == "" || worksheet.Cell($"E{i}").GetString() == "#N/A")
                         {
-                            MessageBox.Show($"Valor não informado para o produro {worksheet.Range[$"B{i}"].Value}", "Valiação de Dados");
+                            MessageBox.Show($"Valor não informado para o produro {worksheet.Cell($"B{i}").GetString()}", "Valiação de Dados");
                             return;
                         }
 
-                        if (worksheet.Range[$"F{i}"].Value == "" || worksheet.Range[$"F{i}"].Value == "#N/A")
+                        if (worksheet.Cell($"F{i}").GetString() == "" || worksheet.Cell($"F{i}").GetString() == "#N/A")
                         {
-                            MessageBox.Show($"Quantida não informado para o produro {worksheet.Range[$"B{i}"].Value}. \nSe o Produto não compor ao pedido deixa a quantidade zerada(0)", "Valiação de Dados");
+                            MessageBox.Show($"Quantida não informado para o produro {worksheet.Cell($"B{i}").GetString()}. \nSe o Produto não compor ao pedido deixa a quantidade zerada(0)", "Valiação de Dados");
                             return;
                         }
 
-                        var qtde = worksheet.Range[$"F{i}"].Value;
-                        var vlrunit = worksheet.Range[$"E{i}"].Value;
-                        var codcompladicional = worksheet.Range[$"A{i}"].Value;
-                        var obs = worksheet.Range[$"I{i}"].Value;
-                        var itens = worksheet.Range[$"J{i}"].Value;
+                        var qtde = worksheet.Cell($"F{i}").GetString();
+                        var vlrunit = worksheet.Cell($"E{i}").GetString();
+                        var codcompladicional = worksheet.Cell($"A{i}").GetString();
+                        var obs = worksheet.Cell($"I{i}").GetString();
+                        var itens = worksheet.Cell($"J{i}").GetString();
 
                         produtos.Add(
                             new PedidoDetalhesModel
@@ -243,11 +234,18 @@ namespace Compras
 
                     try
                     {
-                        var parcelas = await new DatabaseContext().CondicaoPagamentoParcelas
-                            .Where(x => x.id_cond_pagamento == long.Parse(condicoes) && (x.numero_dias == null || x.numero_dias == 0))
-                            .ToListAsync();
+                        await using var connection = new NpgsqlConnection(BaseSettings.ConnectionString);
+                        const string parcelasSql = """
+                            SELECT COUNT(*)
+                            FROM compras.tbl_parcelas_pagto
+                            WHERE id_cond_pagamento = @idCondPagamento
+                              AND COALESCE(numero_dias, 0) = 0;
+                            """;
+                        var parcelasInvalidas = await connection.ExecuteScalarAsync<int>(
+                            parcelasSql,
+                            new { idCondPagamento = long.Parse(condicoes) });
 
-                        if (parcelas.Count > 0)
+                        if (parcelasInvalidas > 0)
                         {
                             MessageBox.Show("Condições de pagamento não possui parcelas cadastradas", "Valiação de Dados");
                             Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
@@ -280,18 +278,11 @@ namespace Compras
                         */
                         MessageBox.Show("Pedido importado com sucesso e movido para pasta de 'FINALIZADOS'!", "Pedido", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                     }
-                    catch (DbUpdateException ex)
-                    {
-                        Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-                        MessageBox.Show(ex.InnerException.Message);
-                    }
                     catch (Exception ex)
                     {
                         Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
                         MessageBox.Show(ex.Message);
                     }
-
-                    workbook.Close();
 
                 }
                 catch (Exception ex)
@@ -305,46 +296,71 @@ namespace Compras
 
         private async Task<ObservableCollection<PedidoDetalhesModel>> InsertProdutoPedido(ObservableCollection<PedidoDetalhesModel> produtos, PedidoModel pedido)
         {
-            using DatabaseContext db = new();
-            var strategy = db.Database.CreateExecutionStrategy();
+            await using var connection = new NpgsqlConnection(BaseSettings.ConnectionString);
+            await connection.OpenAsync();
+            await using var transaction = await connection.BeginTransactionAsync();
 
-            await strategy.ExecuteAsync(async () => {
-                using var transaction = db.Database.BeginTransaction();
-                try
+            try
+            {
+                const string atualizarDetalheSql = """
+                    UPDATE compras.pedidosdet
+                    SET qtde = @qtde,
+                        vlrunit = @vlrunit,
+                        obs = @obs,
+                        classificacao_cipolatti = @classificacao_cipolatti,
+                        solicitacao = CAST(@solicitacao AS jsonb)
+                    WHERE idpedido = @idpedido
+                      AND codcompladicional = @codcompladicional;
+                    """;
+                const string inserirDetalheSql = """
+                    INSERT INTO compras.pedidosdet
+                        (idpedido, codcompladicional, qtde, vlrunit, obs,
+                         classificacao_cipolatti, solicitacao)
+                    VALUES
+                        (@idpedido, @codcompladicional, @qtde, @vlrunit, @obs,
+                         @classificacao_cipolatti, CAST(@solicitacao AS jsonb));
+                    """;
+
+                foreach (var item in produtos)
                 {
-                    //db.PedidoDetalhes.AddRange(produtos);
-                    foreach (var item in produtos)
+                    var alterados = await connection.ExecuteAsync(
+                        atualizarDetalheSql,
+                        item,
+                        transaction);
+                    if (alterados == 0)
                     {
-                        var detPedidoExistente = await db.PedidoDetalhes.FirstOrDefaultAsync(f => f.idpedido == item.idpedido && f.codcompladicional == item.codcompladicional);
-                        if (detPedidoExistente == null)
-                            db.PedidoDetalhes.Add(item);
-                        else
-                        {
-                            detPedidoExistente.qtde = item.qtde;
-                            detPedidoExistente.vlrunit = item.vlrunit;
-                            db.Entry(detPedidoExistente).State = EntityState.Modified;
-                        }
-                            
+                        await connection.ExecuteAsync(inserirDetalheSql, item, transaction);
                     }
-                    await db.SaveChangesAsync();
+                }
 
-                    //db.Pedidos.Update(pedido);
-                    var pedidoExistente = await db.Pedidos.FindAsync(pedido.idpedido);
+                const string atualizarPedidoSql = """
+                    UPDATE compras.pedidos
+                    SET datapedido = @datapedido,
+                        codempresa = @codempresa,
+                        codfornecedor = @codfornecedor,
+                        id_cond_pagamento = @id_cond_pagamento,
+                        status = @status,
+                        status_por = @status_por,
+                        status_data = @status_data,
+                        data_emissao_nf = @data_emissao_nf,
+                        nf = @nf,
+                        dataentrega = @dataentrega,
+                        comprador = @comprador
+                    WHERE idpedido = @idpedido;
+                    """;
+                await connection.ExecuteAsync(atualizarPedidoSql, pedido, transaction);
 
-                    if (pedidoExistente != null)
-                        db.Entry(pedidoExistente).CurrentValues.SetValues(pedido);
+                await connection.ExecuteAsync(
+                    """
+                    UPDATE financeiro.fluxo
+                    SET debito = 0,
+                        valor_previsto = 0
+                    WHERE id_compras = @idPedido;
+                    """,
+                    new { idPedido = pedido.idpedido },
+                    transaction);
 
-                    await db.SaveChangesAsync();
-
-                    await db.FinanceiroFluxos
-                        .Where(f => f.id_compras == pedido.idpedido)
-                        .ExecuteUpdateAsync(f => f
-                            .SetProperty(p => p.debito, 0)
-                            .SetProperty(p => p.valor_previsto, 0));
-
-                    using var connection = new NpgsqlConnection(BaseSettings.ConnectionString);
-
-                    string sql = @"
+                const string fluxoBaseSql = @"
                         SELECT 
 	                        classifica_cipo, 
 	                        CASE 
@@ -368,133 +384,127 @@ namespace Compras
                         WHERE qry_base_fluxo_pedidos_gerados_parcelas.idpedido = @IdPedido; 
                     ";
 
-                    var result = await connection.QueryAsync<PedidoFluxoDTO>(sql, new { IdPedido = pedido.idpedido });
-                    foreach (var item in result)
-                    {
-                        var fluxoExistente = await db.FinanceiroFluxos.FirstOrDefaultAsync(f => f.id_compras == item.idpedido && f.parcela == item.parcela);
-                        var fluxoNovo = new FinanceiroFluxoModel
-                        {
-                            linha_fluxo = fluxoExistente?.linha_fluxo,
-                            depto = item.classifica_cipo.Trim(),
-                            classif = item.classif,
-                            tipo = item.tipo,
-                            descricao = item.razao_social,
-                            mes = item.mes,
-                            forma_pagto = item.descricao_cond_pagamento,
-                            numero_documento = item.nf,
-                            data_vencimento = item.data_vencimento,
-                            data_pagamento = item.data_vencimento,
-                            debito = item.parcelas,
-                            credito = item.credito,
-                            valor_previsto = item.parcelas,
-                            conta = item.conta,
-                            id_compras = item.idpedido,
-                            parcela = item.parcela,
-                            data_emissao = item.data_emissao_nf,
-                            razao_social = item.razao_social,
-                            cnpj = item.cnpj_cpf
-                        };
-                        if (fluxoExistente == null)
-                            db.FinanceiroFluxos.Add(fluxoNovo);
-                        else
-                            db.Entry(fluxoExistente).CurrentValues.SetValues(fluxoNovo);
-                    }
+                var fluxos = await connection.QueryAsync<PedidoFluxoDTO>(
+                    fluxoBaseSql,
+                    new { IdPedido = pedido.idpedido },
+                    transaction);
 
-                    await db.SaveChangesAsync();
+                const string atualizarFluxoSql = """
+                    UPDATE financeiro.fluxo
+                    SET depto = @depto,
+                        classif = @classif,
+                        tipo = @tipo,
+                        descricao = @descricao,
+                        mes = @mes,
+                        forma_pagto = @forma_pagto,
+                        numero_documento = @numero_documento,
+                        data_vencimento = @data_vencimento,
+                        data_pagamento = @data_pagamento,
+                        debito = @debito,
+                        credito = @credito,
+                        valor_previsto = @valor_previsto,
+                        conta = @conta,
+                        data_emissao = @data_emissao,
+                        razao_social = @razao_social,
+                        cnpj = @cnpj
+                    WHERE id_compras = @id_compras
+                      AND parcela = @parcela;
+                    """;
+                const string inserirFluxoSql = """
+                    INSERT INTO financeiro.fluxo
+                        (depto, classif, tipo, descricao, mes, forma_pagto,
+                         numero_documento, data_vencimento, data_pagamento,
+                         debito, credito, valor_previsto, conta, id_compras,
+                         parcela, data_emissao, razao_social, cnpj)
+                    VALUES
+                        (@depto, @classif, @tipo, @descricao, @mes, @forma_pagto,
+                         @numero_documento, @data_vencimento, @data_pagamento,
+                         @debito, @credito, @valor_previsto, @conta, @id_compras,
+                         @parcela, @data_emissao, @razao_social, @cnpj);
+                    """;
 
-                    transaction.Commit();
- 
-                }
-                catch (DbUpdateException)
+                foreach (var item in fluxos)
                 {
-                    transaction.Rollback();
-                    throw;
-                }
-            });
+                    var fluxo = new FinanceiroFluxoModel
+                    {
+                        depto = item.classifica_cipo?.Trim(),
+                        classif = item.classif,
+                        tipo = item.tipo,
+                        descricao = item.razao_social,
+                        mes = item.mes,
+                        forma_pagto = item.descricao_cond_pagamento,
+                        numero_documento = item.nf,
+                        data_vencimento = item.data_vencimento,
+                        data_pagamento = item.data_vencimento,
+                        debito = item.parcelas,
+                        credito = item.credito,
+                        valor_previsto = item.parcelas,
+                        conta = item.conta,
+                        id_compras = item.idpedido,
+                        parcela = item.parcela,
+                        data_emissao = item.data_emissao_nf,
+                        razao_social = item.razao_social,
+                        cnpj = item.cnpj_cpf
+                    };
 
-            return produtos;
+                    var alterados = await connection.ExecuteAsync(
+                        atualizarFluxoSql,
+                        fluxo,
+                        transaction);
+                    if (alterados == 0)
+                    {
+                        await connection.ExecuteAsync(inserirFluxoSql, fluxo, transaction);
+                    }
+                }
+
+                await transaction.CommitAsync();
+                return produtos;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         private void OnAbrirPedidos(object sender, RoutedEventArgs e)
         {
-            //ViewPedidos view = new();
-            //DocumentContainer.SetHeader(view, "TODOS PEDIDOS");
-            //DocumentContainer.SetSizetoContentInMDI(view, true);
-            //DocumentContainer.SetMDIBounds(view, new Rect((this._mdi.ActualWidth - 1000.0) / 2.0, (this._mdi.ActualHeight - 700.0) / 2.0, 1000.0, 700.0));
-            //DocumentContainer.SetMDIWindowState(view, MDIWindowState.Maximized);
-            //this._mdi.CanMDIMaximize = true;
-            //this._mdi.Items.Add(view);
             adicionarFilho(new ViewPedidos(), "TODOS PEDIDOS", "TODOS_PEDIDOS");
         }
 
         private void OnOpenCadastroFornecedor(object sender, RoutedEventArgs e)
         {
-            //ViewCadastroFornecedor view = new();
-            //DocumentContainer.SetHeader(view, "CADASTRO FORNECEDOR");
-            //DocumentContainer.SetSizetoContentInMDI(view, true);
-            //DocumentContainer.SetMDIBounds(view, new Rect((this._mdi.ActualWidth - 1000.0) / 2.0, (this._mdi.ActualHeight - 700.0) / 2.0, 1000.0, 700.0));
-            //DocumentContainer.SetMDIWindowState(view, MDIWindowState.Maximized);
-            //this._mdi.CanMDIMaximize = false;
-            //this._mdi.Items.Add(view);
             adicionarFilho(new ViewCadastroFornecedor(), "CADASTRO FORNECEDOR", "CADASTRO_FORNECEDOR");
         }
 
         private void OnOpenCastroCondicaoPagamento(object sender, RoutedEventArgs e)
         {
-            //ViewCadastroCondicaoPagamento view = new();
-            //DocumentContainer.SetHeader(view, "CADASTRO CONDIÇÃO DE PAGAMENTO");
-            //DocumentContainer.SetSizetoContentInMDI(view, true);
-            //DocumentContainer.SetMDIBounds(view, new Rect((this._mdi.ActualWidth - 1000.0) / 2.0, (this._mdi.ActualHeight - 700.0) / 2.0, 1000.0, 700.0));
-            //DocumentContainer.SetMDIWindowState(view, MDIWindowState.Maximized);
-            //this._mdi.CanMDIMaximize = false;
-            //this._mdi.Items.Add(view);
             adicionarFilho(new ViewCadastroCondicaoPagamento(), "CADASTRO CONDIÇÃO DE PAGAMENTO", "CADASTRO_CONDICAO_DE_PAGAMENTO");
         }
 
         private void OnOpenCadastroFamiliaComprador(object sender, RoutedEventArgs e)
         {
-            //ViewCadastroFamiliaComprador view = new();
-            //DocumentContainer.SetHeader(view, "CADASTRO COMPRADOR(A) FAMÍLIA");
-            //DocumentContainer.SetSizetoContentInMDI(view, true);
-            //DocumentContainer.SetMDIBounds(view, new Rect((this._mdi.ActualWidth - 500.0) / 2.0, (this._mdi.ActualHeight - 700.0) / 2.0, 500.0, 700.0));
-            //DocumentContainer.SetMDIWindowState(view, MDIWindowState.Maximized);
-            //this._mdi.CanMDIMaximize = false;
-            //this._mdi.Items.Add(view);
             adicionarFilho(new ViewCadastroFamiliaComprador(), "CADASTRO COMPRADOR(A) FAMÍLIA", "CADASTRO_COMPRADOR_FAMILIA");
         }
 
         private void OnOpenTodasDescricoes(object sender, RoutedEventArgs e)
         {
-            //ViewConsultaProdutos view = new();
-            //DocumentContainer.SetHeader(view, "TODOS PRONTOS CIPOLATTI");
-            //DocumentContainer.SetSizetoContentInMDI(view, true);
-            //DocumentContainer.SetMDIBounds(view, new Rect((this._mdi.ActualWidth - 1000.0) / 2.0, (this._mdi.ActualHeight - 700.0) / 2.0, 1000.0, 700.0));
-            //DocumentContainer.SetMDIWindowState(view, MDIWindowState.Maximized);
-            //this._mdi.CanMDIMaximize = true;
-            //this._mdi.Items.Add(view);
             adicionarFilho(new ViewConsultaProdutos(), "TODOS PRONTOS CIPOLATTI", "TODOS_PRONTOS_CIPOLATTI");
         }
 
-        private async void OnOpenConsultaGerencial(object sender, RoutedEventArgs e)
+        private async void OnOpenConsultaGerencial(object sender, Telerik.Windows.RadRoutedEventArgs e)
         {
             try
             {
                 Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = Cursors.Wait; });
 
-                using DatabaseContext db = new();
-                //var data = await db.PendenciaProducaos.ToListAsync();
-                var data = await db.SolicitacaoDetalhes.ToListAsync();
+                await using var connection = new NpgsqlConnection(BaseSettings.ConnectionString);
+                var data = (await connection.QueryAsync<SolicitacaoDetalheItem>(
+                    "SELECT * FROM compras.qry_solicitacoes_detalhes_itens;")).ToList();
 
-                using ExcelEngine excelEngine = new ExcelEngine();
-                IApplication application = excelEngine.Excel;
-
-                application.DefaultVersion = ExcelVersion.Xlsx;
-
-                //Create a workbook
-                IWorkbook workbook = application.Workbooks.Create(1);
-                IWorksheet worksheet = workbook.Worksheets[0];
-                //worksheet.IsGridLinesVisible = false;
-                worksheet.ImportData(data, 1, 1, true);
+                using var workbook = new XLWorkbook();
+                var worksheet = workbook.AddWorksheet("Consulta Gerencial");
+                ClosedXmlHelper.ImportarDados(worksheet, data);
 
                 workbook.SaveAs(@$"{BaseSettings.CaminhoSistema}Impressos\CONSULTA_GERENCIAL.xlsx");
                 Process.Start(new ProcessStartInfo(@$"{BaseSettings.CaminhoSistema}Impressos\CONSULTA_GERENCIAL.xlsx")
@@ -553,5 +563,6 @@ namespace Compras
             adicionarFilho(new ViewSolicitacaoFinalizadas(), "SOLICITAÇÕES FINALIZADAS", "SOLICITACOES_FINALIZADAS");
             
         }
+
     }
 }

@@ -42,6 +42,10 @@
                 <telerik:RadMenuItem Header="Gerenciamento" Click="OnOpenConsultaGerencial"/>
                 <telerik:RadMenuItem Header="Todas as Descrições" Click="OnOpenTodasDescricoes"/>
             </telerik:RadMenuItem>
+            <telerik:RadMenuItem Header="Outros">
+                <telerik:RadMenuItem Header="Atualizar Sistema" Click="OnAtualizarSistemaClick"/>
+                <telerik:RadMenuItem Header="Sobre" Click="OnSobreSistemaClick"/>
+            </telerik:RadMenuItem>
         </telerik:RadMenu>
 
         <telerik:RadDocking

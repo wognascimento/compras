@@ -25,9 +25,9 @@
         <StackPanel Grid.Row="0" Grid.Column="0">
             <TextBlock Text="Tipo" />
             <telerik:RadComboBox x:Name="tipo">
-                <ComboBoxItem Content="ALMOXARIFADO" />
-                <ComboBoxItem Content="ESTOQUE" />
-                <ComboBoxItem Content="SERVIÇO" />
+                <telerik:RadComboBoxItem Content="ALMOXARIFADO" />
+                <telerik:RadComboBoxItem Content="ESTOQUE" />
+                <telerik:RadComboBoxItem Content="SERVIÇO" />
             </telerik:RadComboBox>
         </StackPanel>
 

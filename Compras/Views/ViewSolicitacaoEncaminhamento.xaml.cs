@@ -2,7 +2,7 @@ using Compras.DataBase.Model;
 using Dapper;
 using Newtonsoft.Json;
 using Npgsql;
-using Syncfusion.XlsIO;
+using ClosedXML.Excel;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -273,38 +273,36 @@ namespace Compras.Views
                     codfornecedor = fornecedor
                 });
 
-                using ExcelEngine excelEngine = new();
-                IWorkbook workbook = excelEngine.Excel.Workbooks.Open(caminhoModelo, ExcelParseOptions.Default, false, "1@3mudar");
-                IWorksheet worksheet = workbook.Worksheets[0];
+                using var workbook = new XLWorkbook(caminhoModelo);
+                var worksheet = workbook.Worksheet(1);
 
-                worksheet.Range["E4"].Text = ViewModel.Pedido.idpedido?.ToString();
-                worksheet.Range["G4"].Text = ViewModel.Pedido.datapedido?.ToString("dd/MM/yyyy");
-                worksheet.Range["C7"].Text = fornecedor?.ToString() ?? "#N/D";
+                worksheet.Cell("E4").Value = ViewModel.Pedido.idpedido?.ToString() ?? string.Empty;
+                worksheet.Cell("G4").Value = ViewModel.Pedido.datapedido?.ToString("dd/MM/yyyy") ?? string.Empty;
+                worksheet.Cell("C7").Value = fornecedor?.ToString() ?? "#N/D";
 
                 var itens = ViewModel.ItensPedido.ToList();
                 for (var i = 0; i < itens.Count; i++)
                 {
                     var item = itens[i];
                     var linha = i + 12;
-                    worksheet.Range[$"A{linha}"].Text = item.codcompleadicional?.ToString();
-                    worksheet.Range[$"B{linha}"].Text = item.descricao_completa;
-                    worksheet.Range[$"F{linha}"].Number = item.quantidade ?? 0;
-                    worksheet.Range[$"E{linha}"].Number = item.preco ?? 0;
-                    worksheet.Range[$"J{linha}"].Text = item.itens;
+                    worksheet.Cell($"A{linha}").Value = item.codcompleadicional?.ToString() ?? string.Empty;
+                    worksheet.Cell($"B{linha}").Value = item.descricao_completa ?? string.Empty;
+                    worksheet.Cell($"F{linha}").Value = item.quantidade ?? 0;
+                    worksheet.Cell($"E{linha}").Value = item.preco ?? 0;
+                    worksheet.Cell($"J{linha}").Value = item.itens ?? string.Empty;
                 }
 
-                workbook.Worksheets[1].ImportData(await ViewModel.GetFornecedoresAsync(), 1, 1, true);
-                worksheet.Names.Add("fornecedores").RefersToRange = worksheet.Range["fornecedores!$2:$1048576"];
-                workbook.Worksheets[2].ImportData(await ViewModel.GetCondicoesAsync(), 1, 1, true);
-                worksheet.Names.Add("condicoes").RefersToRange = worksheet.Range["condicoes!$2:$1048576"];
-                workbook.Worksheets[3].ImportData(await ViewModel.GetEmpresasAsync(), 1, 1, true);
-                worksheet.Names.Add("empresas").RefersToRange = worksheet.Range["empresas!$2:$1048576"];
+                Compras.Utils.ClosedXmlHelper.ImportarDados(workbook.Worksheet(2), await ViewModel.GetFornecedoresAsync());
+                Compras.Utils.ClosedXmlHelper.DefinirNome(workbook, "fornecedores", workbook.Worksheet(2));
+                Compras.Utils.ClosedXmlHelper.ImportarDados(workbook.Worksheet(3), await ViewModel.GetCondicoesAsync());
+                Compras.Utils.ClosedXmlHelper.DefinirNome(workbook, "condicoes", workbook.Worksheet(3));
+                Compras.Utils.ClosedXmlHelper.ImportarDados(workbook.Worksheet(4), await ViewModel.GetEmpresasAsync());
+                Compras.Utils.ClosedXmlHelper.DefinirNome(workbook, "empresas", workbook.Worksheet(4));
 
                 var diretorio = Path.Combine(baseSettings.CaminhoSistema ?? string.Empty, "Impressos");
                 Directory.CreateDirectory(diretorio);
                 var arquivo = Path.Combine(diretorio, $"PEDIDO-COMPRA-{ViewModel.Pedido.idpedido}.xlsm");
                 workbook.SaveAs(arquivo);
-                workbook.Close();
 
                 Process.Start(new ProcessStartInfo(arquivo) { UseShellExecute = true });
             }
@@ -323,23 +321,15 @@ namespace Compras.Views
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
-                using ExcelEngine excelEngine = new();
-                IWorkbook workbook = excelEngine.Excel.Workbooks.Create(1);
-                IWorksheet worksheet = workbook.Worksheets[0];
-                worksheet.ImportData(ViewModel.SolicitacoesEncaminhadas, new ExcelImportDataOptions
-                {
-                    FirstRow = 1,
-                    FirstColumn = 1,
-                    IncludeHeader = true,
-                    PreserveTypes = true
-                });
-                worksheet.UsedRange.AutofitColumns();
+                using var workbook = new XLWorkbook();
+                var worksheet = workbook.AddWorksheet("Encaminhamento");
+                Compras.Utils.ClosedXmlHelper.ImportarDados(worksheet, ViewModel.SolicitacoesEncaminhadas);
+                worksheet.ColumnsUsed().AdjustToContents();
 
                 var diretorio = Path.Combine(baseSettings.CaminhoSistema ?? string.Empty, "Impressos");
                 Directory.CreateDirectory(diretorio);
                 var arquivo = Path.Combine(diretorio, $"ENCAMINHAMENTO-{DateTime.Now:yyyyMMddHHmmss}.xlsx");
                 workbook.SaveAs(arquivo);
-                workbook.Close();
                 Process.Start(new ProcessStartInfo(arquivo) { UseShellExecute = true });
             }
             catch (Exception ex)

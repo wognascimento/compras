@@ -20,10 +20,10 @@ namespace Compras
     {
         private readonly DataBaseSettings BaseSettings = DataBaseSettings.Instance;
         private readonly string CURRENT_VERSION = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0.0";
+        public string CurrentVersion => CURRENT_VERSION;
 
         public App()
         {
-            Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("MTU4NUAzMjM3MkUzMTJFMzluT08wbzRnYm4zUlFDOVRzWVpYbUtuSEl0aUhTZmNMYjQxekhrV0NVRnlzPQ==");
 
             DapperTypeHandlers.Configure();
             BaseSettings.LoadFromConfiguration();
@@ -50,7 +50,7 @@ namespace Compras
             await CheckForUpdatesAsync();
         }
 
-        private async Task CheckForUpdatesAsync()
+        public async Task CheckForUpdatesAsync(bool showUpToDate = false)
         {
             if (string.IsNullOrWhiteSpace(BaseSettings.UpdateInfoUrl))
                 return;
@@ -61,7 +61,11 @@ namespace Compras
                 var updateInfo = await updateChecker.CheckForUpdatesAsync();
 
                 if (updateInfo == null)
+                {
+                    if (showUpToDate)
+                        MessageBox.Show($"O sistema já está atualizado.\n\nVersão atual: {CURRENT_VERSION}", "Atualização do sistema", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
+                }
 
                 var result = MessageBox.Show(
                     $"Nova versao disponivel!\n\n" +

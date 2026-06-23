@@ -35,7 +35,7 @@ namespace Compras.Views.PopUp
                     data_solicitacao = DateTime.Now
                 };
 
-                vm.SolicitacaoMaterial =  await Task.Run(async () => await vm.CreateSolicitacaoMaterialAsync(solicitacao));
+                vm.SolicitacaoMaterial =  await vm.CreateSolicitacaoMaterialAsync(solicitacao);
                 btnGrevar.IsEnabled= false;
                 Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
             }
