@@ -25,10 +25,29 @@ namespace Compras.Views
         private readonly DataBaseSettings baseSettings = DataBaseSettings.Instance;
         private Point? dragStartPoint;
 
-        public ViewSolicitacaoEncaminhamento(string tipo)
+        public ViewSolicitacaoEncaminhamento(string tipo, bool habilitarMontarPedido = true)
         {
             InitializeComponent();
             DataContext = new SolicitacaoEncaminhadaViewModel { Tipo = tipo };
+
+            if (!habilitarMontarPedido)
+            {
+                ConfigurarModoSemPedido();
+            }
+        }
+
+        private void ConfigurarModoSemPedido()
+        {
+            colunaSolicitacoes.Width = new GridLength(1, GridUnitType.Star);
+            colunaTransferencia.Width = new GridLength(0);
+            colunaPedido.Width = new GridLength(0);
+            btnLimparPedido.Visibility = Visibility.Collapsed;
+            btnGerarPedido.Visibility = Visibility.Collapsed;
+            painelTransferencia.Visibility = Visibility.Collapsed;
+            grupoMontarPedido.Visibility = Visibility.Collapsed;
+            textoMontarPedido.Visibility = Visibility.Collapsed;
+            itensSolicitados.PreviewMouseLeftButtonDown -= ItensSolicitados_PreviewMouseLeftButtonDown;
+            itensSolicitados.PreviewMouseMove -= ItensSolicitados_PreviewMouseMove;
         }
 
         private SolicitacaoEncaminhadaViewModel ViewModel => (SolicitacaoEncaminhadaViewModel)DataContext;

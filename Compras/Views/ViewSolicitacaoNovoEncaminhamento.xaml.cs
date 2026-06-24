@@ -25,10 +25,31 @@ namespace Compras.Views
     {
         private Point? dragStartPoint;
 
-        public ViewSolicitacaoNovoEncaminhamento(string tipo = "MATERIAIS")
+        public ViewSolicitacaoNovoEncaminhamento(
+            string tipo = "MATERIAIS",
+            bool habilitarMontarPedido = true)
         {
             InitializeComponent();
             DataContext = new SolicitacaoNovoEncaminhamentoViewModel(tipo);
+
+            if (!habilitarMontarPedido)
+            {
+                ConfigurarModoSemPedido();
+            }
+        }
+
+        private void ConfigurarModoSemPedido()
+        {
+            colunaSolicitacoes.Width = new GridLength(1, GridUnitType.Star);
+            colunaTransferencia.Width = new GridLength(0);
+            colunaPedido.Width = new GridLength(0);
+            btnLimparPedido.Visibility = Visibility.Collapsed;
+            btnGerarPedido.Visibility = Visibility.Collapsed;
+            painelTransferencia.Visibility = Visibility.Collapsed;
+            grupoMontarPedido.Visibility = Visibility.Collapsed;
+            textoMontarPedido.Visibility = Visibility.Collapsed;
+            gridPendentes.PreviewMouseLeftButtonDown -= GridPendentes_PreviewMouseLeftButtonDown;
+            gridPendentes.PreviewMouseMove -= GridPendentes_PreviewMouseMove;
         }
 
         private SolicitacaoNovoEncaminhamentoViewModel ViewModel =>
@@ -266,6 +287,94 @@ namespace Compras.Views
             var idsNoPedido = origensPedido.Select(i => i.cod_item).ToHashSet();
             SolicitacoesPendentes = new ObservableCollection<SolicitacaoEncaminhadaModel>(
                 itens.Where(i => !idsNoPedido.Contains(i.cod_item)));
+        }
+
+        public async Task CarregarFinalizadasAsync()
+        {
+            const string sql = """
+                SELECT
+                    item.id_almox_item AS cod_item,
+                    MIN(origem.cod_solicitacao) AS cod_solicitacao,
+                    item.data_entrega,
+                    item.almox_recebimento,
+                    string_agg(
+                        DISTINCT COALESCE(origem.solicitante, ''),
+                        ', '
+                    ) FILTER (WHERE COALESCE(origem.solicitante, '') <> '') AS solicitante,
+                    string_agg(
+                        DISTINCT COALESCE(origem.solicitante, ''),
+                        ', '
+                    ) FILTER (WHERE COALESCE(origem.solicitante, '') <> '') AS username,
+                    MIN(solicitacao.data_solicitacao) AS data_solicitacao,
+                    item.quantidade_total_solicitada AS quantidade,
+                    string_agg(
+                        DISTINCT COALESCE(origem.obs_solicitacao, ''),
+                        ' | '
+                    ) FILTER (WHERE COALESCE(origem.obs_solicitacao, '') <> '') AS obs_solicitacao,
+                    string_agg(
+                        DISTINCT COALESCE(origem.cliente, ''),
+                        ', '
+                    ) FILTER (WHERE COALESCE(origem.cliente, '') <> '') AS cliente,
+                    MIN(origem.data_utilizacao) AS data_utilizacao,
+                    item.quantidade_enviar_compra AS quantidade_compra,
+                    item.obs_almoxarifado,
+                    item.codprodutocompra,
+                    item.codcompleadicional,
+                    item.tipo,
+                    descricao.familia,
+                    item.planilha,
+                    item.descricao_completa,
+                    item.unidade,
+                    descricao.saldo_estoque,
+                    item.preco,
+                    fornecedor.nomefantasia,
+                    item.idfornecedor,
+                    item.orientacao_compra,
+                    item.orientacao_roteiro,
+                    item.finalizado,
+                    item.finalizado_por,
+                    item.finalizado_em
+                FROM compras.almoxarifado_encaminhamento_itens item
+                JOIN compras.almoxarifado_encaminhamento_origem vinculo
+                  ON vinculo.id_almox_item = item.id_almox_item
+                JOIN compras.solicitacao_material_itens origem
+                  ON origem.cod_item = vinculo.cod_item
+                JOIN compras.solicitacao_material solicitacao
+                  ON solicitacao.cod_solicitacao = origem.cod_solicitacao
+                LEFT JOIN producao.qry3descricoes descricao
+                  ON descricao.codcompladicional = item.codcompleadicional
+                LEFT JOIN compras.fornecedores fornecedor
+                  ON fornecedor.idfornecedor = item.idfornecedor
+                WHERE COALESCE(item.finalizado, false) = true
+                GROUP BY
+                    item.id_almox_item,
+                    item.data_entrega,
+                    item.almox_recebimento,
+                    item.quantidade_total_solicitada,
+                    item.quantidade_enviar_compra,
+                    item.obs_almoxarifado,
+                    item.codprodutocompra,
+                    item.codcompleadicional,
+                    item.tipo,
+                    descricao.familia,
+                    item.planilha,
+                    item.descricao_completa,
+                    item.unidade,
+                    descricao.saldo_estoque,
+                    item.preco,
+                    fornecedor.nomefantasia,
+                    item.idfornecedor,
+                    item.orientacao_compra,
+                    item.orientacao_roteiro,
+                    item.finalizado,
+                    item.finalizado_por,
+                    item.finalizado_em
+                ORDER BY item.finalizado_em DESC, item.id_almox_item DESC;
+                """;
+
+            await using var connection = CreateConnection();
+            var itens = await connection.QueryAsync<SolicitacaoEncaminhadaModel>(sql);
+            SolicitacoesPendentes = new ObservableCollection<SolicitacaoEncaminhadaModel>(itens);
         }
 
         public void AdicionarAoPedido(IEnumerable<SolicitacaoEncaminhadaModel> itens)

@@ -83,7 +83,26 @@ namespace Compras
 
         private void OnOpenEncaminhamento(object sender, RoutedEventArgs e)
         {
-            adicionarFilho(new ViewSolicitacaoEncaminhamento("MATERIAIS"), "ENCAMINHAMENTO SOLICITAÇÃO MATERIAL", "ENCAMINHAMENTO_SOLICITACAO_MATERIAL");
+            adicionarFilho(
+                new ViewSolicitacaoEncaminhamento("MATERIAIS"),
+                "MATERIAL LEGADO PEDIDO",
+                "MATERIAL_LEGADO_PEDIDO");
+        }
+
+        private void OnOpenEncaminhamentoMaterialLegado(object sender, RoutedEventArgs e)
+        {
+            adicionarFilho(
+                new ViewSolicitacaoEncaminhamentoMaterialLegado(),
+                "MATERIAL LEGADO",
+                "MATERIAL_LEGADO");
+        }
+
+        private void OnOpenEncaminhamentoMaterial(object sender, RoutedEventArgs e)
+        {
+            adicionarFilho(
+                new ViewSolicitacaoEncaminhamentoMaterial(),
+                "MATERIAL",
+                "MATERIAL");
         }
 
         private void OnOpenEncaminhamentoAlmoxarifado(object sender, RoutedEventArgs e)
@@ -93,7 +112,10 @@ namespace Compras
 
         private void OnOpenNovoEncaminhamento(object sender, RoutedEventArgs e)
         {
-            adicionarFilho(new ViewSolicitacaoNovoEncaminhamento("MATERIAIS"), "NOVO ENCAMINHAMENTO DE COMPRAS", "NOVO_ENCAMINHAMENTO_COMPRAS");
+            adicionarFilho(
+                new ViewSolicitacaoNovoEncaminhamento("MATERIAIS"),
+                "MATERIAL PEDIDO",
+                "MATERIAL_PEDIDO");
         }
 
         private void OnOpenEncaminhamentoServico(object sender, RoutedEventArgs e)
@@ -560,8 +582,18 @@ namespace Compras
 
         private void OnFinalizadas(object sender, RoutedEventArgs e)
         {
-            adicionarFilho(new ViewSolicitacaoFinalizadas(), "SOLICITAÇÕES FINALIZADAS", "SOLICITACOES_FINALIZADAS");
-            
+            adicionarFilho(
+                new ViewSolicitacaoFinalizadas(),
+                "SOLICITAÇÕES FINALIZADAS LEGADO",
+                "SOLICITACOES_FINALIZADAS_LEGADO");
+        }
+
+        private void OnFinalizadasMaterial(object sender, RoutedEventArgs e)
+        {
+            adicionarFilho(
+                new ViewSolicitacaoFinalizadasMaterial(),
+                "SOLICITAÇÕES FINALIZADAS MATERIAL",
+                "SOLICITACOES_FINALIZADAS_MATERIAL");
         }
 
     }

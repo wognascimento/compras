@@ -18,9 +18,9 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="3*" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="2*" />
+                <ColumnDefinition x:Name="colunaSolicitacoes" Width="3*" />
+                <ColumnDefinition x:Name="colunaTransferencia" Width="Auto" />
+                <ColumnDefinition x:Name="colunaPedido" Width="2*" />
             </Grid.ColumnDefinitions>
 
             <Grid Grid.Row="0" Grid.ColumnSpan="3" Margin="0,0,0,8">
@@ -38,8 +38,8 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <telerik:RadButton Margin="0,0,8,0" Click="OnAtualizar" Content="Atualizar" />
                     <telerik:RadButton Margin="0,0,8,0" Click="OnExportarExcel" Content="Enviar para Excel" />
-                    <telerik:RadButton Margin="0,0,8,0" Click="OnLimparPedido" Content="Limpar Pedido" />
-                    <telerik:RadButton Click="OnCreateFile" Content="Gerar Pedido" />
+                    <telerik:RadButton x:Name="btnLimparPedido" Margin="0,0,8,0" Click="OnLimparPedido" Content="Limpar Pedido" />
+                    <telerik:RadButton x:Name="btnGerarPedido" Click="OnCreateFile" Content="Gerar Pedido" />
                 </StackPanel>
             </Grid>
 
@@ -89,12 +89,12 @@
                 </telerik:RadGridView>
             </GroupBox>
 
-            <StackPanel Grid.Row="1" Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
+            <StackPanel x:Name="painelTransferencia" Grid.Row="1" Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
                 <telerik:RadButton Margin="0,0,0,8" Click="OnAdicionarSelecionados" Content="&gt;&gt;" Width="60" />
                 <telerik:RadButton Click="OnRemoverSelecionados" Content="&lt;&lt;" Width="60" />
             </StackPanel>
 
-            <GroupBox Grid.Row="1" Grid.Column="2" Header="Montar Pedido" AllowDrop="True" Drop="ItensPedido_Drop">
+            <GroupBox x:Name="grupoMontarPedido" Grid.Row="1" Grid.Column="2" Header="Montar Pedido" AllowDrop="True" Drop="ItensPedido_Drop">
                 <telerik:RadGridView
                     x:Name="ItensPedido"
                     AutoGenerateColumns="False"
@@ -114,6 +114,7 @@
             </GroupBox>
 
             <TextBlock
+                x:Name="textoMontarPedido"
                 Grid.Row="2"
                 Grid.ColumnSpan="3"
                 Margin="0,8,0,0"
