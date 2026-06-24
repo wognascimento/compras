@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -79,6 +80,21 @@ namespace Compras
         public string? finalizado_por { get; set; }
         public DateTime? finalizado_em { get; set; }
         public long[]? codigos_itens_origem { get; set; }
+        public ObservableCollection<SolicitacaoEncaminhadaOrigemModel> Origens { get; set; } = [];
 
+    }
+
+    public class SolicitacaoEncaminhadaOrigemModel
+    {
+        public long? id_almox_item { get; set; }
+        public long? cod_item { get; set; }
+        public long? cod_solicitacao { get; set; }
+        public DateTime? data_solicitacao { get; set; }
+        public string? solicitante { get; set; }
+        public string? cliente { get; set; }
+        public string? obs_solicitacao { get; set; }
+        public double? quantidade { get; set; }
+        public string? unidade { get; set; }
+        public DateTime? data_utilizacao { get; set; }
     }
 }

@@ -1,4 +1,5 @@
 using Compras.DataBase.Model;
+using Compras.Utils;
 using Dapper;
 using Newtonsoft.Json;
 using Npgsql;
@@ -83,9 +84,11 @@ namespace Compras.Views
 
         private void ItensSolicitados_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            dragStartPoint = IsInsideCheckBox(e.OriginalSource as DependencyObject)
-                ? null
-                : e.GetPosition(itensSolicitados);
+            dragStartPoint = GridDragHelper.CanStartDrag(
+                itensSolicitados,
+                e.OriginalSource as DependencyObject)
+                ? e.GetPosition(itensSolicitados)
+                : null;
         }
 
         private void ItensSolicitados_PreviewMouseMove(object sender, MouseEventArgs e)
@@ -108,19 +111,6 @@ namespace Compras.Views
                 DragDrop.DoDragDrop(itensSolicitados, selecionados, DragDropEffects.Move);
 
             dragStartPoint = null;
-        }
-
-        private static bool IsInsideCheckBox(DependencyObject? element)
-        {
-            while (element != null)
-            {
-                if (element is CheckBox)
-                    return true;
-
-                element = VisualTreeHelper.GetParent(element);
-            }
-
-            return false;
         }
 
         private void ItensPedido_Drop(object sender, DragEventArgs e)

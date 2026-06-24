@@ -1,4 +1,5 @@
 using Dapper;
+using Compras.Utils;
 using Npgsql;
 using System;
 using System.Collections.Generic;
@@ -18,6 +19,8 @@ namespace Compras.Views
     /// </summary>
     public partial class ViewSolicitacaoEncaminhamentoAlmoxarifado : UserControl
     {
+        private Point? dragStartPoint;
+
         public ViewSolicitacaoEncaminhamentoAlmoxarifado()
         {
             InitializeComponent();
@@ -48,19 +51,43 @@ namespace Compras.Views
             }
         }
 
+        private void GridPendentes_PreviewMouseLeftButtonDown(
+            object sender,
+            MouseButtonEventArgs e)
+        {
+            dragStartPoint = GridDragHelper.CanStartDrag(
+                gridPendentes,
+                e.OriginalSource as DependencyObject)
+                ? e.GetPosition(gridPendentes)
+                : null;
+        }
+
         private void GridPendentes_PreviewMouseMove(object sender, MouseEventArgs e)
         {
-            if (e.LeftButton != MouseButtonState.Pressed)
+            if (e.LeftButton != MouseButtonState.Pressed || dragStartPoint is null)
                 return;
+
+            var currentPoint = e.GetPosition(gridPendentes);
+            if (Math.Abs(currentPoint.X - dragStartPoint.Value.X) <
+                    SystemParameters.MinimumHorizontalDragDistance &&
+                Math.Abs(currentPoint.Y - dragStartPoint.Value.Y) <
+                    SystemParameters.MinimumVerticalDragDistance)
+            {
+                return;
+            }
 
             var selecionados = gridPendentes.SelectedItems
                 .OfType<AlmoxarifadoSolicitacaoPendenteModel>()
                 .ToList();
 
             if (selecionados.Count == 0)
+            {
+                dragStartPoint = null;
                 return;
+            }
 
             DragDrop.DoDragDrop(gridPendentes, selecionados, DragDropEffects.Move);
+            dragStartPoint = null;
         }
 
         private void GroupBox_Drop(object sender, DragEventArgs e)

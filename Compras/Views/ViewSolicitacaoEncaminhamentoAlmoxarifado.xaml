@@ -18,9 +18,9 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="2*" />
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="1*" />
             </Grid.ColumnDefinitions>
 
             <Grid Grid.Row="0" Grid.ColumnSpan="3" Margin="0,0,0,8">
@@ -49,19 +49,20 @@
                     CanUserInsertRows="False"
                     IsReadOnly="True"
                     ItemsSource="{Binding SolicitacoesPendentes}"
+                    PreviewMouseLeftButtonDown="GridPendentes_PreviewMouseLeftButtonDown"
                     PreviewMouseMove="GridPendentes_PreviewMouseMove"
                     SelectionMode="Extended"
                     ShowGroupPanel="False">
                     <telerik:RadGridView.Columns>
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding cod_item}" Header="Item" Width="70" />
-                        <telerik:GridViewDataColumn DataMemberBinding="{Binding descricao_completa}" Header="Descrição" Width="auto" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding descricao_completa}" Header="Descrição" Width="auto" EnableDistinctValuesFiltering="True" DistinctValuesSearchMode="Contains"/>
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding quantidade}" Header="Qtde." DataFormatString="{}{0:N2}" Width="90" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding unidade}" Header="Unid." Width="70" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding saldo_estoque}" Header="Estoque" DataFormatString="{}{0:N2}" Width="90" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding data_solicitacao}" Header="Data Solic." DataFormatString="{}{0:dd/MM/yyyy}" Width="95" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding solicitante}" Header="Solicitante" Width="120" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding cliente}" Header="Cliente" Width="100" />
-                        <telerik:GridViewDataColumn DataMemberBinding="{Binding almox_recebimento}" Header="Almox." Width="90" />
+                        <!--<telerik:GridViewDataColumn DataMemberBinding="{Binding almox_recebimento}" Header="Almox." Width="90" />-->
                     </telerik:RadGridView.Columns>
                 </telerik:RadGridView>
             </GroupBox>
@@ -86,7 +87,7 @@
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding quantidade_atendida_estoque}" Header="Atende Estoque" DataFormatString="{}{0:N2}" Width="100" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding quantidade_enviar_compra}" Header="Enviar Compra" DataFormatString="{}{0:N2}" IsReadOnly="True" Width="100" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding unidade}" Header="Unid." IsReadOnly="True" Width="70" />
-                        <telerik:GridViewDataColumn DataMemberBinding="{Binding nomefantasia}" Header="Fornecedor" IsReadOnly="True" Width="120" />
+                        <!--<telerik:GridViewDataColumn DataMemberBinding="{Binding nomefantasia}" Header="Fornecedor" IsReadOnly="True" Width="120" />-->
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding solicitantes}" Header="Solicitante(s)" IsReadOnly="True" Width="180" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding obs_almoxarifado}" Header="Obs. Almox." Width="150" />
                     </telerik:RadGridView.Columns>

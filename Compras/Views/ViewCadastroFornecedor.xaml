@@ -30,7 +30,6 @@
         <telerik:RadWatermarkTextBox x:Name="id"
                                      Grid.Row="0"
                                      Grid.Column="0"
-                                     Margin="5"
                                      IsReadOnly="True"
                                      WatermarkContent="Código"
                                      Text="{Binding Fornecedor.idfornecedor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
@@ -38,7 +37,6 @@
         <telerik:RadComboBox x:Name="tipo"
                              Grid.Row="0"
                              Grid.Column="1"
-                             Margin="5"
                              IsEditable="False"
                              SelectedValue="{Binding Fornecedor.pessoa_j, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                              SelectedValuePath="Tag"
@@ -50,7 +48,6 @@
         <telerik:RadWatermarkTextBox x:Name="cnpj"
                                      Grid.Row="1"
                                      Grid.Column="0"
-                                     Margin="5"
                                      WatermarkContent="CPF/CNPJ"
                                      Text="{Binding Fornecedor.cnpj_cpf, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                      LostFocus="OnCnpjLostFocus"
@@ -60,21 +57,18 @@
                                      Grid.Row="1"
                                      Grid.Column="1"
                                      Grid.ColumnSpan="2"
-                                     Margin="5"
                                      WatermarkContent="Razão Social"
                                      Text="{Binding Fornecedor.razao_social, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
         <telerik:RadWatermarkTextBox x:Name="apelido"
                                      Grid.Row="1"
                                      Grid.Column="3"
-                                     Margin="5"
                                      WatermarkContent="Apelido"
                                      Text="{Binding Fornecedor.nomefantasia, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
         <telerik:RadWatermarkTextBox x:Name="cep"
                                      Grid.Row="2"
                                      Grid.Column="0"
-                                     Margin="5"
                                      WatermarkContent="CEP"
                                      Text="{Binding Fornecedor.cep, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                      PreviewKeyDown="OnCepKeyDown" />
@@ -83,73 +77,63 @@
                                      Grid.Row="3"
                                      Grid.Column="0"
                                      Grid.ColumnSpan="3"
-                                     Margin="5"
                                      WatermarkContent="Endereço"
                                      Text="{Binding Fornecedor.enderaco, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
         <telerik:RadWatermarkTextBox x:Name="numero"
                                      Grid.Row="3"
                                      Grid.Column="3"
-                                     Margin="5"
                                      WatermarkContent="Número"
                                      Text="{Binding Fornecedor.numero, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
         <telerik:RadWatermarkTextBox x:Name="bairro"
                                      Grid.Row="4"
                                      Grid.Column="0"
-                                     Margin="5"
                                      WatermarkContent="Bairro"
                                      Text="{Binding Fornecedor.bairro, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
         <telerik:RadWatermarkTextBox x:Name="cidade"
                                      Grid.Row="4"
                                      Grid.Column="1"
-                                     Margin="5"
                                      WatermarkContent="Cidade"
                                      Text="{Binding Fornecedor.cidade, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
         <telerik:RadWatermarkTextBox x:Name="estado"
                                      Grid.Row="4"
                                      Grid.Column="2"
-                                     Margin="5"
                                      WatermarkContent="Estado"
                                      Text="{Binding Fornecedor.estado, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
         <telerik:RadWatermarkTextBox x:Name="complemento"
                                      Grid.Row="4"
                                      Grid.Column="3"
-                                     Margin="5"
                                      WatermarkContent="Complemento"
                                      Text="{Binding Fornecedor.complemento, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
         <telerik:RadWatermarkTextBox x:Name="site"
                                      Grid.Row="5"
                                      Grid.Column="0"
-                                     Margin="5"
                                      WatermarkContent="Site"
                                      Text="{Binding Fornecedor.site, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
         <telerik:RadWatermarkTextBox x:Name="email"
                                      Grid.Row="5"
                                      Grid.Column="1"
-                                     Margin="5"
                                      WatermarkContent="E-mail"
                                      Text="{Binding Fornecedor.email, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
         <telerik:RadWatermarkTextBox x:Name="telefone"
                                      Grid.Row="5"
                                      Grid.Column="2"
-                                     Margin="5"
                                      WatermarkContent="Telefone"
                                      Text="{Binding Fornecedor.fone1, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
         <StackPanel Grid.Row="6"
                     Grid.Column="0"
                     Grid.ColumnSpan="2"
-                    Margin="5"
+        
                     Orientation="Horizontal">
             <telerik:RadButton Width="110"
-                               Margin="0,0,8,0"
                                Content="Novo"
                                Click="OnBtnNovo" />
             <telerik:RadButton Width="110"
@@ -160,7 +144,6 @@
         <telerik:RadGridView x:Name="fornecedoresGrid"
                              Grid.Row="7"
                              Grid.ColumnSpan="4"
-                             Margin="5"
                              ItemsSource="{Binding Fornecedores}"
                              SelectedItem="{Binding Fornecedor}"
                              AutoGenerateColumns="False"

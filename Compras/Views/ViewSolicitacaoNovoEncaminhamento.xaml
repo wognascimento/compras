@@ -18,9 +18,9 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition x:Name="colunaSolicitacoes" Width="3*" />
+                <ColumnDefinition x:Name="colunaSolicitacoes" Width="2*" />
                 <ColumnDefinition x:Name="colunaTransferencia" Width="Auto" />
-                <ColumnDefinition x:Name="colunaPedido" Width="2*" />
+                <ColumnDefinition x:Name="colunaPedido" Width="1*" />
             </Grid.ColumnDefinitions>
 
             <Grid Grid.Row="0" Grid.ColumnSpan="3" Margin="0,0,0,8">
@@ -47,12 +47,45 @@
                     x:Name="gridPendentes"
                     AutoGenerateColumns="False"
                     CanUserInsertRows="False"
+                    GroupRenderMode="Flat"
                     ItemsSource="{Binding SolicitacoesPendentes}"
                     PreviewMouseLeftButtonDown="GridPendentes_PreviewMouseLeftButtonDown"
                     PreviewMouseMove="GridPendentes_PreviewMouseMove"
                     RowEditEnded="GridPendentes_RowEditEnded"
                     SelectionMode="Extended"
                     ShowGroupPanel="False">
+                    <telerik:RadGridView.ChildTableDefinitions>
+                        <telerik:GridViewTableDefinition>
+                            <telerik:GridViewTableDefinition.Relation>
+                                <telerik:PropertyRelation ParentPropertyName="Origens" />
+                            </telerik:GridViewTableDefinition.Relation>
+                        </telerik:GridViewTableDefinition>
+                    </telerik:RadGridView.ChildTableDefinitions>
+
+                    <telerik:RadGridView.HierarchyChildTemplate>
+                        <DataTemplate>
+                            <telerik:RadGridView
+                                AutoGenerateColumns="False"
+                                CanUserDeleteRows="False"
+                                CanUserInsertRows="False"
+                                IsFilteringAllowed="False"
+                                IsReadOnly="True"
+                                ItemsSource="{Binding Origens}"
+                                ShowGroupPanel="False">
+                                <telerik:RadGridView.Columns>
+                                    <telerik:GridViewDataColumn DataMemberBinding="{Binding cod_solicitacao}" Header="SOLICITAÇÃO" Width="100" />
+                                    <telerik:GridViewDataColumn DataMemberBinding="{Binding data_solicitacao}" Header="DATA" DataFormatString="{}{0:dd/MM/yyyy}" Width="95" />
+                                    <telerik:GridViewDataColumn DataMemberBinding="{Binding solicitante}" Header="SOLICITANTE" Width="130" />
+                                    <telerik:GridViewDataColumn DataMemberBinding="{Binding cliente}" Header="CLIENTE" Width="130" />
+                                    <telerik:GridViewDataColumn DataMemberBinding="{Binding obs_solicitacao}" Header="OBSERVAÇÃO" Width="auto" />
+                                    <telerik:GridViewDataColumn DataMemberBinding="{Binding quantidade}" Header="QTDE." DataFormatString="{}{0:N2}" Width="85" />
+                                    <telerik:GridViewDataColumn DataMemberBinding="{Binding unidade}" Header="UNID." Width="70" />
+                                    <telerik:GridViewDataColumn DataMemberBinding="{Binding data_utilizacao}" Header="UTILIZAÇÃO" DataFormatString="{}{0:dd/MM/yyyy}" Width="100" />
+                                </telerik:RadGridView.Columns>
+                            </telerik:RadGridView>
+                        </DataTemplate>
+                    </telerik:RadGridView.HierarchyChildTemplate>
+
                     <telerik:RadGridView.Columns>
                         <telerik:GridViewCheckBoxColumn
                             DataMemberBinding="{Binding finalizado, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -61,15 +94,17 @@
                             IsReadOnly="False"
                             Width="80" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding data_solicitacao}" Header="Data Solic." DataFormatString="{}{0:dd/MM/yyyy}" IsReadOnly="True" Width="95" />
-                        <telerik:GridViewDataColumn DataMemberBinding="{Binding descricao_completa}" Header="Descrição" IsReadOnly="True" Width="*" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding descricao_completa}" Header="Descrição" IsReadOnly="True" Width="auto" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding quantidade}" Header="Qtde. Sol." DataFormatString="{}{0:N2}" IsReadOnly="True" Width="90" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding quantidade_compra}" Header="Qtde. Compra" DataFormatString="{}{0:N2}" Width="100" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding saldo_estoque}" Header="Estoque" DataFormatString="{}{0:N2}" IsReadOnly="True" Width="100" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding preco}" Header="Preço" DataFormatString="{}{0:N2}" Width="85" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding unidade}" Header="Unid." IsReadOnly="True" Width="65" />
-                        <telerik:GridViewDataColumn DataMemberBinding="{Binding nomefantasia}" Header="Fornecedor" IsReadOnly="True" Width="130" />
+                        <!--<telerik:GridViewDataColumn DataMemberBinding="{Binding nomefantasia}" Header="Fornecedor" IsReadOnly="True" Width="130" />-->
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding data_entrega}" Header="Entrega" DataFormatString="{}{0:dd/MM/yyyy}" Width="95" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding solicitante}" Header="Solicitante" IsReadOnly="True" Width="110" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding cliente}" Header="Cliente" IsReadOnly="True" Width="95" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding obs_solicitacao}" Header="Observação Solicitação" IsReadOnly="True" Width="170" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding orientacao_compra}" Header="Orientação Compra" Width="150" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding orientacao_roteiro}" Header="Orientação Roteiro" Width="150" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding planilha}" Header="Planilha" IsReadOnly="True" Width="100" />

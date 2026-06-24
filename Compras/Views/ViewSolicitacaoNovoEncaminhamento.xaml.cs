@@ -1,4 +1,5 @@
 using Compras.DataBase.Model;
+using Compras.Utils;
 using Dapper;
 using Newtonsoft.Json;
 using Npgsql;
@@ -79,9 +80,11 @@ namespace Compras.Views
 
         private void GridPendentes_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            dragStartPoint = IsInsideCheckBox(e.OriginalSource as DependencyObject)
-                ? null
-                : e.GetPosition(gridPendentes);
+            dragStartPoint = GridDragHelper.CanStartDrag(
+                gridPendentes,
+                e.OriginalSource as DependencyObject)
+                ? e.GetPosition(gridPendentes)
+                : null;
         }
 
         private void GridPendentes_PreviewMouseMove(object sender, MouseEventArgs e)
@@ -104,19 +107,6 @@ namespace Compras.Views
                 DragDrop.DoDragDrop(gridPendentes, selecionados, DragDropEffects.Move);
 
             dragStartPoint = null;
-        }
-
-        private static bool IsInsideCheckBox(DependencyObject? element)
-        {
-            while (element != null)
-            {
-                if (element is CheckBox)
-                    return true;
-
-                element = VisualTreeHelper.GetParent(element);
-            }
-
-            return false;
         }
 
         private void GroupBox_Drop(object sender, DragEventArgs e)
@@ -283,10 +273,88 @@ namespace Compras.Views
                     """;
 
             await using var connection = CreateConnection();
-            var itens = await connection.QueryAsync<SolicitacaoEncaminhadaModel>(sql);
+            var itens = (await connection.QueryAsync<SolicitacaoEncaminhadaModel>(sql)).ToList();
+            await CarregarOrigensAsync(connection, itens);
             var idsNoPedido = origensPedido.Select(i => i.cod_item).ToHashSet();
             SolicitacoesPendentes = new ObservableCollection<SolicitacaoEncaminhadaModel>(
                 itens.Where(i => !idsNoPedido.Contains(i.cod_item)));
+        }
+
+        private static async Task CarregarOrigensAsync(
+            NpgsqlConnection connection,
+            IReadOnlyCollection<SolicitacaoEncaminhadaModel> itens)
+        {
+            var ids = itens
+                .Where(item => item.cod_item.HasValue)
+                .Select(item => item.cod_item!.Value)
+                .Distinct()
+                .ToArray();
+
+            if (ids.Length == 0)
+                return;
+
+            const string sql = """
+                SELECT
+                    vinculo.id_almox_item,
+                    origem.cod_item,
+                    origem.cod_solicitacao,
+                    solicitacao.data_solicitacao,
+                    COALESCE(
+                        NULLIF(origem.solicitante, ''),
+                        solicitante.username
+                    ) AS solicitante,
+                    origem.cliente,
+                    origem.obs_solicitacao,
+                    origem.quantidade,
+                    descricao.unidade,
+                    origem.data_utilizacao
+                FROM compras.almoxarifado_encaminhamento_origem vinculo
+                JOIN compras.solicitacao_material_itens origem
+                  ON origem.cod_item = vinculo.cod_item
+                JOIN compras.solicitacao_material solicitacao
+                  ON solicitacao.cod_solicitacao = origem.cod_solicitacao
+                LEFT JOIN compras.solicitacao_solicitantes solicitante
+                  ON solicitante.cod_solicitante = solicitacao.cod_solicitante
+                LEFT JOIN producao.qry3descricoes descricao
+                  ON descricao.codcompladicional = origem.codcompleadicional
+                WHERE vinculo.id_almox_item = ANY(@ids)
+                ORDER BY
+                    vinculo.id_almox_item,
+                    solicitacao.data_solicitacao,
+                    origem.cod_solicitacao,
+                    origem.cod_item;
+                """;
+
+            var origens = await connection.QueryAsync<SolicitacaoEncaminhadaOrigemModel>(
+                sql,
+                new { ids });
+
+            var porItem = origens
+                .Where(origem => origem.id_almox_item.HasValue)
+                .GroupBy(origem => origem.id_almox_item!.Value)
+                .ToDictionary(grupo => grupo.Key, grupo => grupo.ToList());
+
+            foreach (var item in itens)
+            {
+                if (!item.cod_item.HasValue ||
+                    !porItem.TryGetValue(item.cod_item.Value, out var origensItem))
+                {
+                    continue;
+                }
+
+                if (origensItem.Count == 1)
+                {
+                    var origem = origensItem[0];
+                    item.cliente = origem.cliente;
+                    item.obs_solicitacao = origem.obs_solicitacao;
+                    item.solicitante = origem.solicitante;
+                    item.Origens.Clear();
+                    continue;
+                }
+
+                item.Origens = new ObservableCollection<SolicitacaoEncaminhadaOrigemModel>(
+                    origensItem);
+            }
         }
 
         public async Task CarregarFinalizadasAsync()
