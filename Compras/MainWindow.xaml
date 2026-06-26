@@ -62,7 +62,24 @@
             </telerik:RadDocking.DocumentHost>
         </telerik:RadDocking>
 
-        <StatusBar Grid.Row="2">
+        <telerik:RadToolBar Grid.Row="2" GripVisibility="Collapsed" OverflowButtonVisibility="Collapsed">
+
+            <telerik:RadButton ToolTip="Salvar" Click="OnAlterarUsuario">
+                <StackPanel Orientation="Horizontal">
+                    <Image Source="/icones/icons8-usu_0025c3_0025a1rio-de-g_0025c3_0025aanero-neutro-windows-metro-16.png" Width="16" Height="16"/>
+                    <TextBlock x:Name="txtUsername" Margin="5,0,0,0"/>
+                </StackPanel>
+            </telerik:RadButton>
+
+
+            <telerik:RadButton ToolTip="Salvar" Click="OnAlterarAno" telerik:RadToolBar.ItemAlignment="Right">
+                <StackPanel Orientation="Horizontal">
+                    <Image Source="/Icones/configuracao-de-dados-windows-metro-16.png" Width="16" Height="16"/>
+                    <TextBlock x:Name="txtDataBase" Margin="5,0,0,0"/>
+                </StackPanel>
+            </telerik:RadButton>
+            
+            <!--            
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <Grid>
@@ -76,6 +93,7 @@
                     </Grid>
                 </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
+            
             <StatusBarItem>
                 <Image Source="/Icones/icons8-usu_0025c3_0025a1rio-de-g_0025c3_0025aanero-neutro-windows-metro-16.png"
                        Width="16"
@@ -102,6 +120,7 @@
             <StatusBarItem Grid.Column="4">
                 <TextBlock x:Name="txtDataBase"/>
             </StatusBarItem>
-        </StatusBar>
+-->            
+        </telerik:RadToolBar>
     </Grid>
 </Window>

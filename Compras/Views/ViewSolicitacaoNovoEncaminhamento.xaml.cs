@@ -24,6 +24,7 @@ namespace Compras.Views
 {
     public partial class ViewSolicitacaoNovoEncaminhamento : UserControl
     {
+        private readonly DataBaseSettings baseSettings = DataBaseSettings.Instance;
         private Point? dragStartPoint;
 
         public ViewSolicitacaoNovoEncaminhamento(
@@ -155,6 +156,32 @@ namespace Compras.Views
             await CarregarPendentesAsync();
         }
 
+        private void OnEnviarParaExcel(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+                using var workbook = new XLWorkbook();
+                var worksheet = workbook.AddWorksheet("Encaminhamento");
+                Compras.Utils.ClosedXmlHelper.ImportarDados(worksheet, ViewModel.SolicitacoesPendentes);
+                worksheet.ColumnsUsed().AdjustToContents();
+
+                var diretorio = Path.Combine(baseSettings.CaminhoSistema ?? string.Empty, "Impressos");
+                Directory.CreateDirectory(diretorio);
+                var arquivo = Path.Combine(diretorio, $"ENCAMINHAMENTO-{DateTime.Now:yyyyMMddHHmmss}.xlsx");
+                workbook.SaveAs(arquivo);
+                Process.Start(new ProcessStartInfo(arquivo) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Exportar", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
+        }
+
         private async void GridPendentes_RowEditEnded(object sender, GridViewRowEditEndedEventArgs e)
         {
             if (e.EditAction != GridViewEditAction.Commit || e.NewData is not SolicitacaoEncaminhadaModel item)
@@ -211,6 +238,7 @@ namespace Compras.Views
                 Mouse.OverrideCursor = null;
             }
         }
+
     }
 
     public sealed class SolicitacaoNovoEncaminhamentoViewModel : INotifyPropertyChanged
@@ -246,17 +274,30 @@ namespace Compras.Views
             }
         }
 
+        public IReadOnlyList<string> OrientacoesRoteiro { get; } =
+        [
+            "CARRO",
+            "KOMBI",
+            "MASTER",
+            "CAMIHÃO",
+            "A DEFINIR"
+        ];
+
         private NpgsqlConnection CreateConnection() => new(baseSettings.ConnectionString);
 
         public async Task CarregarPendentesAsync()
         {
             var sql = tipo == "SERVIÇO"
                 ? """
-                    SELECT *
-                    FROM compras.qry_solicitacoes_encaminhadas
-                    WHERE COALESCE(finalizado, false) = false
-                      AND tipo = 'SERVIÇO'
-                    ORDER BY data_solicitacao, cod_solicitacao, cod_item;
+                    SELECT
+                        encaminhada.*,
+                        item.pedido
+                    FROM compras.qry_solicitacoes_encaminhadas encaminhada
+                    LEFT JOIN compras.solicitacao_material_itens item
+                      ON item.cod_item = encaminhada.cod_item
+                    WHERE COALESCE(encaminhada.finalizado, false) = false
+                      AND encaminhada.tipo = 'SERVIÇO'
+                    ORDER BY encaminhada.data_solicitacao, encaminhada.cod_solicitacao, encaminhada.cod_item;
                     """
                 : """
                     SELECT consolidado.*,
@@ -399,6 +440,7 @@ namespace Compras.Views
                     item.idfornecedor,
                     item.orientacao_compra,
                     item.orientacao_roteiro,
+                    item.pedido,
                     item.finalizado,
                     item.finalizado_por,
                     item.finalizado_em
@@ -434,6 +476,7 @@ namespace Compras.Views
                     item.idfornecedor,
                     item.orientacao_compra,
                     item.orientacao_roteiro,
+                    item.pedido,
                     item.finalizado,
                     item.finalizado_por,
                     item.finalizado_em
@@ -548,6 +591,7 @@ namespace Compras.Views
                     preco = @preco,
                     orientacao_compra = @orientacao_compra,
                     orientacao_roteiro = @orientacao_roteiro,
+                    pedido = @pedido,
                     finalizado = @finalizado,
                     finalizado_por = @finalizado_por,
                     finalizado_em = @finalizado_em
@@ -560,6 +604,7 @@ namespace Compras.Views
                     preco = @preco,
                     orientacao_compra = @orientacao_compra,
                     orientacao_roteiro = @orientacao_roteiro,
+                    pedido = @pedido,
                     finalizado = COALESCE(@finalizado, finalizado),
                     finalizado_por = @finalizado_por,
                     finalizado_em = @finalizado_em,
@@ -576,6 +621,7 @@ namespace Compras.Views
                 item.preco,
                 item.orientacao_compra,
                 item.orientacao_roteiro,
+                item.pedido,
                 item.finalizado,
                 item.finalizado_por,
                 item.finalizado_em,

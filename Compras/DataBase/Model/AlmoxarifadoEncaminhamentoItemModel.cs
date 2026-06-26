@@ -26,6 +26,7 @@ namespace Compras
         public double? preco { get; set; }
         public string? orientacao_compra { get; set; }
         public string? orientacao_roteiro { get; set; }
+        public bool? pedido { get; set; }
         public DateTime? data_entrega { get; set; }
         public string? resp_compra { get; set; }
         public bool? finalizado { get; set; }

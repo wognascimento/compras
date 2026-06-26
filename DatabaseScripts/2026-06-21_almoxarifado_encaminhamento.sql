@@ -16,6 +16,9 @@ ALTER TABLE compras.solicitacao_material_itens
 ALTER TABLE compras.solicitacao_material_itens
     ADD COLUMN IF NOT EXISTS processado_almox_em timestamp with time zone;
 
+ALTER TABLE compras.solicitacao_material_itens
+    ADD COLUMN IF NOT EXISTS pedido boolean NOT NULL DEFAULT false;
+
 UPDATE compras.solicitacao_material_itens
 SET status_fluxo = 'SOLICITADO'
 WHERE status_fluxo IS NULL;
@@ -54,6 +57,7 @@ CREATE TABLE IF NOT EXISTS compras.almoxarifado_encaminhamento_itens
     preco numeric(15,2),
     orientacao_compra text,
     orientacao_roteiro text,
+    pedido boolean NOT NULL DEFAULT false,
     data_entrega date,
     resp_compra character varying(50),
     finalizado boolean NOT NULL DEFAULT false,
@@ -75,6 +79,9 @@ ALTER TABLE compras.almoxarifado_encaminhamento_itens
 
 ALTER TABLE compras.almoxarifado_encaminhamento_itens
     ADD COLUMN IF NOT EXISTS orientacao_roteiro text;
+
+ALTER TABLE compras.almoxarifado_encaminhamento_itens
+    ADD COLUMN IF NOT EXISTS pedido boolean NOT NULL DEFAULT false;
 
 ALTER TABLE compras.almoxarifado_encaminhamento_itens
     ADD COLUMN IF NOT EXISTS data_entrega date;
@@ -230,6 +237,7 @@ SELECT
     almox_item.idfornecedor,
     almox_item.orientacao_compra,
     almox_item.orientacao_roteiro,
+    almox_item.pedido,
     string_agg(DISTINCT COALESCE(origem.solicitante, ''), ', ') FILTER (WHERE COALESCE(origem.solicitante, '') <> '') AS solicitante,
     almox_item.finalizado,
     almox_item.finalizado_por,
@@ -267,6 +275,7 @@ GROUP BY
     almox_item.idfornecedor,
     almox_item.orientacao_compra,
     almox_item.orientacao_roteiro,
+    almox_item.pedido,
     almox_item.finalizado,
     almox_item.finalizado_por,
     almox_item.finalizado_em;

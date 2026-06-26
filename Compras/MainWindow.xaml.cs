@@ -39,7 +39,6 @@ namespace Compras
         public MainWindow()
         {
             InitializeComponent();
-            StyleManager.ApplicationTheme = new Windows11Theme();
 
             txtUsername.Text = BaseSettings.Username;
             txtDataBase.Text = BaseSettings.Database;
@@ -89,7 +88,7 @@ namespace Compras
                 "MATERIAL_LEGADO_PEDIDO");
         }
 
-        private void OnOpenEncaminhamentoMaterialLegado(object sender, RoutedEventArgs e)
+        private void OnOpenEncaminhamentoMaterialLegado(object sender, Telerik.Windows.RadRoutedEventArgs e)
         {
             adicionarFilho(
                 new ViewSolicitacaoEncaminhamentoMaterialLegado(),
@@ -97,7 +96,7 @@ namespace Compras
                 "MATERIAL_LEGADO");
         }
 
-        private void OnOpenEncaminhamentoMaterial(object sender, RoutedEventArgs e)
+        private void OnOpenEncaminhamentoMaterial(object sender, Telerik.Windows.RadRoutedEventArgs e)
         {
             adicionarFilho(
                 new ViewSolicitacaoEncaminhamentoMaterial(),
@@ -543,7 +542,7 @@ namespace Compras
             }
         }
 
-        private void OnAlterarUsuario(object sender, MouseButtonEventArgs e)
+        private void OnAlterarUsuario(object sender, RoutedEventArgs e)
         {
             Login window = new();
             window.ShowDialog();
@@ -561,7 +560,7 @@ namespace Compras
             }
         }
 
-        private void Image_MouseDown(object sender, MouseButtonEventArgs e)
+        private void OnAlterarAno(object sender, RoutedEventArgs e)
         {
             RadWindow.Prompt(new DialogParameters()
             {

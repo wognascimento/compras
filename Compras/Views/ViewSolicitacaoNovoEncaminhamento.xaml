@@ -36,8 +36,9 @@
                     Text="NOVO ENCAMINHAMENTO DE COMPRAS" />
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <telerik:RadButton Margin="0,0,8,0" Click="OnAtualizarPendentes" Content="Atualizar Pendentes" />
-                    <telerik:RadButton x:Name="btnLimparPedido" Margin="0,0,8,0" Click="OnLimparPedido" Content="Limpar Pedido" />
+                    <telerik:RadButton Click="OnAtualizarPendentes" Content="Atualizar Pendentes" />
+                    <telerik:RadButton Click="OnEnviarParaExcel" Content="Enviar para o Excel" />
+                    <telerik:RadButton x:Name="btnLimparPedido" Click="OnLimparPedido" Content="Limpar Pedido" />
                     <telerik:RadButton x:Name="btnGerarPedido" Click="OnGerarPedido" Content="Gerar Pedido" />
                 </StackPanel>
             </Grid>
@@ -101,13 +102,25 @@
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding preco}" Header="Preço" DataFormatString="{}{0:N2}" Width="85" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding unidade}" Header="Unid." IsReadOnly="True" Width="65" />
                         <!--<telerik:GridViewDataColumn DataMemberBinding="{Binding nomefantasia}" Header="Fornecedor" IsReadOnly="True" Width="130" />-->
-                        <telerik:GridViewDataColumn DataMemberBinding="{Binding data_entrega}" Header="Entrega" DataFormatString="{}{0:dd/MM/yyyy}" Width="95" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding data_entrega}" Header="Previ. Entrega" DataFormatString="{}{0:dd/MM/yyyy}" Width="95" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding solicitante}" Header="Solicitante" IsReadOnly="True" Width="110" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding cliente}" Header="Cliente" IsReadOnly="True" Width="95" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding obs_solicitacao}" Header="Observação Solicitação" IsReadOnly="True" Width="170" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding orientacao_compra}" Header="Orientação Compra" Width="150" />
-                        <telerik:GridViewDataColumn DataMemberBinding="{Binding orientacao_roteiro}" Header="Orientação Roteiro" Width="150" />
+                        <telerik:GridViewComboBoxColumn
+                            DataMemberBinding="{Binding orientacao_roteiro, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            Header="Orientação Roteiro"
+                            ItemsSource="{Binding DataContext.OrientacoesRoteiro, RelativeSource={RelativeSource AncestorType=telerik:RadGridView}}"
+                            Width="150" />
+                        <telerik:GridViewCheckBoxColumn
+                            DataMemberBinding="{Binding pedido, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            EditTriggers="CellClick"
+                            Header="Pedido"
+                            IsReadOnly="False"
+                            Width="70" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding resp_compra}" Header="Comprador(a)" IsReadOnly="True" Width="110" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding planilha}" Header="Planilha" IsReadOnly="True" Width="100" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding familia}" Header="Família" IsReadOnly="True" Width="100" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding cod_item}" Header="Item" IsReadOnly="True" Width="70" />
                     </telerik:RadGridView.Columns>
                 </telerik:RadGridView>
