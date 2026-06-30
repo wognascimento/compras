@@ -52,9 +52,16 @@
                     ItemsSource="{Binding SolicitacoesPendentes}"
                     PreviewMouseLeftButtonDown="GridPendentes_PreviewMouseLeftButtonDown"
                     PreviewMouseMove="GridPendentes_PreviewMouseMove"
+                    PreviewMouseRightButtonDown="GridPendentes_PreviewMouseRightButtonDown"
                     RowEditEnded="GridPendentes_RowEditEnded"
                     SelectionMode="Extended"
                     ShowGroupPanel="False">
+                    <telerik:RadGridView.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Ver histórico" Click="OnVerHistorico" />
+                        </ContextMenu>
+                    </telerik:RadGridView.ContextMenu>
+
                     <telerik:RadGridView.ChildTableDefinitions>
                         <telerik:GridViewTableDefinition>
                             <telerik:GridViewTableDefinition.Relation>
@@ -95,6 +102,7 @@
                             IsReadOnly="False"
                             Width="80" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding data_solicitacao}" Header="Data Solic." DataFormatString="{}{0:dd/MM/yyyy}" IsReadOnly="True" Width="95" />
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding codcompleadicional}" Header="Código Produto" IsReadOnly="True" Width="95" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding descricao_completa}" Header="Descrição" IsReadOnly="True" Width="auto" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding quantidade}" Header="Qtde. Sol." DataFormatString="{}{0:N2}" IsReadOnly="True" Width="90" />
                         <telerik:GridViewDataColumn DataMemberBinding="{Binding quantidade_compra}" Header="Qtde. Compra" DataFormatString="{}{0:N2}" Width="100" />

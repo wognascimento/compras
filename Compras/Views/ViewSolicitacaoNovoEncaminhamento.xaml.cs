@@ -15,6 +15,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using Telerik.Windows.Controls;
@@ -108,6 +109,16 @@ namespace Compras.Views
                 DragDrop.DoDragDrop(gridPendentes, selecionados, DragDropEffects.Move);
 
             dragStartPoint = null;
+        }
+
+        private void GridPendentes_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            var row = (e.OriginalSource as DependencyObject)?.ParentOfType<GridViewRow>();
+            if (row?.Item is SolicitacaoEncaminhadaModel item)
+            {
+                gridPendentes.SelectedItem = item;
+                gridPendentes.CurrentItem = item;
+            }
         }
 
         private void GroupBox_Drop(object sender, DragEventArgs e)
@@ -212,6 +223,62 @@ namespace Compras.Views
             {
                 MessageBox.Show(ex.Message, "Salvar solicitação", MessageBoxButton.OK, MessageBoxImage.Error);
                 await CarregarPendentesAsync();
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
+        }
+
+        private async void OnVerHistorico(object sender, RoutedEventArgs e)
+        {
+            if (gridPendentes.SelectedItem is not SolicitacaoEncaminhadaModel item || item.cod_item is null)
+            {
+                MessageBox.Show("Selecione uma solicitação para consultar o histórico.", "Histórico", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+                var historico = await ViewModel.GetHistoricoAsync(item);
+
+                if (historico.Count == 0)
+                {
+                    MessageBox.Show("Não há histórico para esta solicitação.", "Histórico", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                var grid = new RadGridView
+                {
+                    AutoGenerateColumns = false,
+                    IsReadOnly = false,
+                    ShowGroupPanel = false,
+                    ItemsSource = historico,
+                    Margin = new Thickness(8)
+                };
+
+                grid.Columns.Add(new GridViewDataColumn { Header = "Alterado Por", DataMemberBinding = new Binding(nameof(SolicitacaoEncaminhamentoHistoricoModel.alterado_por)), Width = 130 });
+                grid.Columns.Add(new GridViewDataColumn { Header = "Data Alteração", DataMemberBinding = new Binding(nameof(SolicitacaoEncaminhamentoHistoricoModel.alterado_em)), DataFormatString = "{0:dd/MM/yyyy HH:mm:ss}", Width = 145 });
+                grid.Columns.Add(new GridViewDataColumn { Header = "Campo", DataMemberBinding = new Binding(nameof(SolicitacaoEncaminhamentoHistoricoModel.campo)), Width = 180 });
+                grid.Columns.Add(new GridViewDataColumn { Header = "Valor Anterior", DataMemberBinding = new Binding(nameof(SolicitacaoEncaminhamentoHistoricoModel.valor_anterior)), Width = new GridViewLength(1, GridViewLengthUnitType.Star) });
+
+                var window = new Window
+                {
+                    Title = $"Histórico - Item {item.cod_item}",
+                    Content = grid,
+                    Width = 1000,
+                    Height = 520,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    Owner = Window.GetWindow(this)
+                };
+
+                Mouse.OverrideCursor = null;
+                window.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Histórico", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -583,6 +650,10 @@ namespace Compras.Views
 
         public async Task SalvarSolicitacaoAsync(SolicitacaoEncaminhadaModel item)
         {
+            var origemTabela = tipo == "SERVIÇO"
+                ? "compras.solicitacao_material_itens"
+                : "compras.almoxarifado_encaminhamento_itens";
+
             var sql = tipo == "SERVIÇO"
                 ? """
                 UPDATE compras.solicitacao_material_itens
@@ -614,23 +685,181 @@ namespace Compras.Views
                 """;
 
             await using var connection = CreateConnection();
-            var linhas = await connection.ExecuteAsync(sql, new
+            await connection.OpenAsync();
+            await using var transaction = await connection.BeginTransactionAsync();
+
+            try
             {
-                item.data_entrega,
-                item.quantidade_compra,
-                item.preco,
-                item.orientacao_compra,
-                item.orientacao_roteiro,
-                item.pedido,
-                item.finalizado,
-                item.finalizado_por,
-                item.finalizado_em,
-                alterado_por = baseSettings.Username,
-                alterado_em = DateTime.Now,
-                item.cod_item
-            });
+                await EnsureHistoricoTableAsync(connection, transaction);
+                await SalvarHistoricoAntesAlteracaoAsync(connection, transaction, item.cod_item, origemTabela);
+
+                var linhas = await connection.ExecuteAsync(sql, new
+                {
+                    item.data_entrega,
+                    item.quantidade_compra,
+                    item.preco,
+                    item.orientacao_compra,
+                    item.orientacao_roteiro,
+                    item.pedido,
+                    item.finalizado,
+                    item.finalizado_por,
+                    item.finalizado_em,
+                    alterado_por = baseSettings.Username,
+                    alterado_em = DateTime.Now,
+                    item.cod_item
+                }, transaction);
+
+                if (linhas != 1)
+                    throw new InvalidOperationException("A solicitação não foi localizada para atualização.");
+
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<ObservableCollection<SolicitacaoEncaminhamentoHistoricoModel>> GetHistoricoAsync(SolicitacaoEncaminhadaModel item)
+        {
+            var origemTabela = tipo == "SERVIÇO"
+                ? "compras.solicitacao_material_itens"
+                : "compras.almoxarifado_encaminhamento_itens";
+
+            await using var connection = CreateConnection();
+            await connection.OpenAsync();
+            await using var transaction = await connection.BeginTransactionAsync();
+            await EnsureHistoricoTableAsync(connection, transaction);
+            await transaction.CommitAsync();
+
+            var historico = await connection.QueryAsync<SolicitacaoEncaminhamentoHistoricoModel>(
+                """
+                SELECT
+                    historico.id_historico,
+                    historico.origem_tabela,
+                    historico.cod_item,
+                    campo.nome AS campo,
+                    CASE
+                        WHEN campo.valor IS NULL OR campo.valor = 'null'::jsonb THEN ''
+                        WHEN jsonb_typeof(campo.valor) = 'string' THEN trim(both '"' from campo.valor::text)
+                        WHEN jsonb_typeof(campo.valor) = 'boolean' THEN CASE WHEN (campo.valor #>> '{}')::boolean THEN 'SIM' ELSE 'NÃO' END
+                        ELSE campo.valor::text
+                    END AS valor_anterior,
+                    historico.alterado_por,
+                    historico.alterado_em
+                FROM compras.solicitacao_encaminhamento_historico historico
+                CROSS JOIN LATERAL (
+                    VALUES
+                        ('Finalizado', historico.dados_anteriores -> 'finalizado'),
+                        ('Qtde. Compra', historico.dados_anteriores -> 'quantidade_compra'),
+                        ('Preço', historico.dados_anteriores -> 'preco'),
+                        ('Previ. Entrega', historico.dados_anteriores -> 'data_entrega'),
+                        ('Orientação Compra', historico.dados_anteriores -> 'orientacao_compra'),
+                        ('Orientação Roteiro', historico.dados_anteriores -> 'orientacao_roteiro'),
+                        ('Pedido', historico.dados_anteriores -> 'pedido')
+                ) AS campo(nome, valor)
+                WHERE historico.cod_item = @cod_item
+                  AND historico.origem_tabela = @origemTabela
+                ORDER BY historico.alterado_em DESC, historico.id_historico DESC, campo.nome;
+                """,
+                new
+                {
+                    item.cod_item,
+                    origemTabela
+                });
+
+            return new ObservableCollection<SolicitacaoEncaminhamentoHistoricoModel>(historico);
+        }
+
+        private static async Task EnsureHistoricoTableAsync(NpgsqlConnection connection, NpgsqlTransaction transaction)
+        {
+            const string sql = """
+                CREATE TABLE IF NOT EXISTS compras.solicitacao_encaminhamento_historico
+                (
+                    id_historico bigserial PRIMARY KEY,
+                    origem_tabela character varying(120) NOT NULL,
+                    cod_item bigint NOT NULL,
+                    dados_anteriores jsonb NOT NULL,
+                    alterado_por character varying(100),
+                    alterado_em timestamp with time zone NOT NULL DEFAULT now()
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_solicitacao_encaminhamento_historico_item
+                    ON compras.solicitacao_encaminhamento_historico (origem_tabela, cod_item, alterado_em DESC);
+                """;
+
+            await connection.ExecuteAsync(sql, transaction: transaction);
+        }
+
+        private async Task SalvarHistoricoAntesAlteracaoAsync(
+            NpgsqlConnection connection,
+            NpgsqlTransaction transaction,
+            long? codItem,
+            string origemTabela)
+        {
+            if (codItem is null)
+                throw new InvalidOperationException("A solicitação não possui código para gravar histórico.");
+
+            var sql = tipo == "SERVIÇO"
+                ? """
+                INSERT INTO compras.solicitacao_encaminhamento_historico
+                    (origem_tabela, cod_item, dados_anteriores, alterado_por, alterado_em)
+                SELECT
+                    @origemTabela,
+                    @codItem,
+                    to_jsonb(dados),
+                    @alteradoPor,
+                    @alteradoEm
+                FROM (
+                    SELECT
+                        data_entrega,
+                        quantidade_compra,
+                        preco,
+                        orientacao_compra,
+                        orientacao_roteiro,
+                        pedido,
+                        finalizado
+                    FROM compras.solicitacao_material_itens
+                    WHERE cod_item = @codItem
+                ) dados;
+                """
+                : """
+                INSERT INTO compras.solicitacao_encaminhamento_historico
+                    (origem_tabela, cod_item, dados_anteriores, alterado_por, alterado_em)
+                SELECT
+                    @origemTabela,
+                    @codItem,
+                    to_jsonb(dados),
+                    @alteradoPor,
+                    @alteradoEm
+                FROM (
+                    SELECT
+                        data_entrega,
+                        quantidade_enviar_compra AS quantidade_compra,
+                        preco,
+                        orientacao_compra,
+                        orientacao_roteiro,
+                        pedido,
+                        finalizado
+                    FROM compras.almoxarifado_encaminhamento_itens
+                    WHERE id_almox_item = @codItem
+                ) dados;
+                """;
+
+            var linhas = await connection.ExecuteAsync(
+                sql,
+                new
+                {
+                    origemTabela,
+                    codItem,
+                    alteradoPor = baseSettings.Username,
+                    alteradoEm = DateTime.Now
+                },
+                transaction);
+
             if (linhas != 1)
-                throw new InvalidOperationException("A solicitação não foi localizada para atualização.");
+                throw new InvalidOperationException("Não foi possível gravar o histórico antes da alteração.");
         }
 
         public async Task<string> GerarPedidoAsync()
@@ -767,5 +996,16 @@ namespace Compras.Views
         public double preco { get; set; }
         public List<long> codigos_itens { get; set; } = [];
         public List<long> ids_almox_itens { get; set; } = [];
+    }
+
+    public sealed class SolicitacaoEncaminhamentoHistoricoModel
+    {
+        public long id_historico { get; set; }
+        public string? origem_tabela { get; set; }
+        public long cod_item { get; set; }
+        public string? campo { get; set; }
+        public string? valor_anterior { get; set; }
+        public string? alterado_por { get; set; }
+        public DateTime alterado_em { get; set; }
     }
 }

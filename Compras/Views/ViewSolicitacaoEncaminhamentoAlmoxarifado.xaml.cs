@@ -198,7 +198,7 @@ namespace Compras.Views
 
         public void AdicionarPendentes(IEnumerable<AlmoxarifadoSolicitacaoPendenteModel> itens)
         {
-            foreach (var item in itens)
+            foreach (var item in itens.ToList())
             {
                 if (item.cod_item == null)
                     continue;
@@ -233,17 +233,35 @@ namespace Compras.Views
                 consolidado.Origens.Add(item);
                 consolidado.quantidade_total_solicitada += item.quantidade ?? 0;
                 consolidado.RecalcularQuantidadeCompra();
+                SolicitacoesPendentes.Remove(item);
             }
         }
 
         public void RemoverConsolidados(IEnumerable<AlmoxarifadoConsolidadoItemModel> itens)
         {
             foreach (var item in itens.ToList())
+            {
+                foreach (var origem in item.Origens)
+                {
+                    if (!SolicitacoesPendentes.Any(p => p.cod_item == origem.cod_item))
+                        SolicitacoesPendentes.Add(origem);
+                }
+
                 ItensConsolidados.Remove(item);
+            }
         }
 
         public void LimparLote()
         {
+            foreach (var item in ItensConsolidados.ToList())
+            {
+                foreach (var origem in item.Origens)
+                {
+                    if (!SolicitacoesPendentes.Any(p => p.cod_item == origem.cod_item))
+                        SolicitacoesPendentes.Add(origem);
+                }
+            }
+
             ItensConsolidados.Clear();
         }
 
