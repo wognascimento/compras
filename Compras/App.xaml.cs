@@ -27,9 +27,8 @@ namespace Compras
 
             DapperTypeHandlers.Configure();
             BaseSettings.LoadFromConfiguration();
-            //Windows11Palette.LoadPreset(Windows11Palette.ColorVariation.Dark);
-            //StyleManager.ApplicationTheme = new Windows11Theme(Windows11Palette.ColorVariation.Dark);
-            StyleManager.ApplicationTheme = new Windows11Theme();
+            //FluentPalette.LoadPreset(FluentPalette.ColorVariation.Dark);
+            StyleManager.ApplicationTheme = new FluentTheme();
             LocalizationManager.Manager = new SigTelerikLocalizationManager();
 
             DispatcherUnhandledException += OnDispatcherUnhandledException;
