@@ -784,9 +784,6 @@ namespace Compras.Views
                     alterado_por character varying(100),
                     alterado_em timestamp with time zone NOT NULL DEFAULT now()
                 );
-
-                CREATE INDEX IF NOT EXISTS idx_solicitacao_encaminhamento_historico_item
-                    ON compras.solicitacao_encaminhamento_historico (origem_tabela, cod_item, alterado_em DESC);
                 """;
 
             await connection.ExecuteAsync(sql, transaction: transaction);
