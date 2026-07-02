@@ -271,9 +271,9 @@ namespace Compras.Views
                     throw new InvalidOperationException("Não há produtos para criar o pedido.");
 
                 Mouse.OverrideCursor = Cursors.Wait;
-                var caminhoModelo = Path.Combine(baseSettings.CaminhoSistema ?? string.Empty, "Modelos", "PEDIDO-COMPRA.xlsm");
-                if (!File.Exists(caminhoModelo))
-                    throw new FileNotFoundException("O modelo PEDIDO-COMPRA.xlsm não foi encontrado.", caminhoModelo);
+                var caminhoModelo = Compras.Utils.ModeloPathResolver.Resolver(
+                    "PEDIDO-COMPRA.xlsm",
+                    baseSettings.CaminhoSistema);
 
                 var fornecedor = ViewModel.ItensPedido.FirstOrDefault()?.idfornecedor;
                 ViewModel.Pedido = await ViewModel.CreatePedido(new PedidoModel

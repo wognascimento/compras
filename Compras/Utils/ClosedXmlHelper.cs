@@ -47,6 +47,15 @@ namespace Compras.Utils
             string nome,
             IXLWorksheet planilha)
         {
+            try
+            {
+                workbook.DefinedNames.Delete(nome);
+            }
+            catch
+            {
+                // O modelo pode ou nao ter o nome definido previamente.
+            }
+
             workbook.DefinedNames.Add(nome, $"'{planilha.Name}'!$2:$1048576");
         }
 

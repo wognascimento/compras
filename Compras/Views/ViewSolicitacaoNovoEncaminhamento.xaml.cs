@@ -869,9 +869,9 @@ namespace Compras.Views
             if (ItensPedido.Count > ultimaLinha - primeiraLinha + 1)
                 throw new InvalidOperationException($"O modelo comporta no máximo {ultimaLinha - primeiraLinha + 1} produtos por pedido.");
 
-            var caminhoModelo = Path.Combine(baseSettings.CaminhoSistema ?? string.Empty, "Modelos", "PEDIDO-COMPRA.xlsm");
-            if (!File.Exists(caminhoModelo))
-                throw new FileNotFoundException("O modelo PEDIDO-COMPRA.xlsm não foi encontrado.", caminhoModelo);
+            var caminhoModelo = Compras.Utils.ModeloPathResolver.Resolver(
+                "PEDIDO-COMPRA.xlsm",
+                baseSettings.CaminhoSistema);
 
             var diretorioSaida = Path.Combine(baseSettings.CaminhoSistema ?? string.Empty, "Impressos");
             Directory.CreateDirectory(diretorioSaida);
