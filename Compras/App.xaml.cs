@@ -28,7 +28,7 @@ namespace Compras
             DapperTypeHandlers.Configure();
             BaseSettings.LoadFromConfiguration();
             //FluentPalette.LoadPreset(FluentPalette.ColorVariation.Dark);
-            StyleManager.ApplicationTheme = new FluentTheme();
+            StyleManager.ApplicationTheme = new Office2016Theme();
             LocalizationManager.Manager = new SigTelerikLocalizationManager();
 
             DispatcherUnhandledException += OnDispatcherUnhandledException;

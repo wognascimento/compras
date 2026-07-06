@@ -20,6 +20,7 @@
                 <TextBlock Text="ID SOLICITAÇÃO"/>
                 <telerik:RadWatermarkTextBox x:Name="IdSolicitacao"
                                              Width="140"
+                                             Margin="0,0,2,0"
                                              LostFocus="IdSolicitacao_LostFocus"
                                              PreviewKeyDown="IdSolicitacao_PreviewKeyDown"/>
             </StackPanel>
@@ -28,12 +29,14 @@
                 <TextBlock Text="TIPO SOLICITAÇÃO"/>
                 <telerik:RadWatermarkTextBox x:Name="TipoSolicitacao"
                                              Width="180"
+                                             Margin="0,0,2,0"
                                              IsReadOnly="True"/>
             </StackPanel>
 
             <telerik:RadButton x:Name="btnNovo"
                                Content="Novo"
                                Width="90"
+                               Margin="0,0,2,0"
                                VerticalAlignment="Bottom"
                                Click="OnCriarSolicitacao"/>
 
@@ -51,6 +54,7 @@
                     <TextBlock Text="ID PRODUTO"/>
                     <telerik:RadWatermarkTextBox x:Name="idProduto"
                                                  Width="217"
+                                                 Margin="0,0,2,0"
                                                  PreviewKeyDown="idProduto_PreviewKeyDown"
                                                  LostFocus="idProduto_LostFocus"/>
                 </StackPanel>
@@ -67,8 +71,15 @@
                     <TextBlock Text="PLANILHA"/>
                     <telerik:RadComboBox x:Name="txtPlanilha"
                                          Width="260"
+                                         Margin="0,0,2,0"
                                          IsEditable="True"
                                          OpenDropDownOnFocus="True"
+                                         IsTextSearchEnabled="True" 
+                                         StaysOpenOnEdit="True" 
+                                         CanAutocompleteSelectItems="False" 
+                                         CanKeyboardNavigationSelectItems="False" 
+                                         UpdateSelectionOnLostFocus="False" 
+                                         UpdateTextOnLostFocus="False"
                                          ItemsSource="{Binding Planilhas}"
                                          DisplayMemberPath="planilha"
                                          SelectionChanged="OnSelectedPlanilha"/>
@@ -80,6 +91,12 @@
                                          Width="450"
                                          IsEditable="True"
                                          OpenDropDownOnFocus="True"
+                                         IsTextSearchEnabled="True" 
+                                         StaysOpenOnEdit="True" 
+                                         CanAutocompleteSelectItems="False" 
+                                         CanKeyboardNavigationSelectItems="False" 
+                                         UpdateSelectionOnLostFocus="False" 
+                                         UpdateTextOnLostFocus="False"
                                          ItemsSource="{Binding Produtos}"
                                          DisplayMemberPath="descricao"
                                          SelectionChanged="OnSelectedDescricao"/>
@@ -91,8 +108,15 @@
                     <TextBlock Text="DESCRIÇÃO ADICIONAL"/>
                     <telerik:RadComboBox x:Name="txtDescricaoAdicional"
                                          Width="260"
+                                         Margin="0,0,2,0"
                                          IsEditable="True"
                                          OpenDropDownOnFocus="True"
+                                         IsTextSearchEnabled="True" 
+                                         StaysOpenOnEdit="True" 
+                                         CanAutocompleteSelectItems="False" 
+                                         CanKeyboardNavigationSelectItems="False" 
+                                         UpdateSelectionOnLostFocus="False" 
+                                         UpdateTextOnLostFocus="False"
                                          ItemsSource="{Binding DescAdicionais}"
                                          DisplayMemberPath="descricao_adicional"
                                          SelectionChanged="OnSelectedDescricaoAdicional"/>
@@ -102,8 +126,15 @@
                     <TextBlock Text="COMPLEMENTO ADICIONAL"/>
                     <telerik:RadComboBox x:Name="txtComplementoAdicional"
                                          Width="450"
+                                         Margin="0,0,2,0"
                                          IsEditable="True"
                                          OpenDropDownOnFocus="True"
+                                         IsTextSearchEnabled="True" 
+                                         StaysOpenOnEdit="True" 
+                                         CanAutocompleteSelectItems="False" 
+                                         CanKeyboardNavigationSelectItems="False" 
+                                         UpdateSelectionOnLostFocus="False" 
+                                         UpdateTextOnLostFocus="False"
                                          ItemsSource="{Binding CompleAdicionais}"
                                          DisplayMemberPath="complementoadicional"
                                          SelectionChanged="OnSelectedComplementoAdicional"/>
@@ -123,19 +154,22 @@
                     <TextBlock Text="QUANTIDADE"/>
                     <telerik:RadWatermarkTextBox x:Name="txtQuantidade"
                                                  Width="110"
+                                                 Margin="0,0,2,0"
                                                  TextAlignment="Center"/>
                 </StackPanel>
 
                 <StackPanel>
                     <TextBlock Text="DATA UTILIZAÇÃO"/>
                     <telerik:RadDatePicker x:Name="dtSolicitacao"
-                                           Width="150"/>
+                                           Width="150"
+                                           Margin="0,0,2,0"/>
                 </StackPanel>
 
                 <StackPanel>
                     <TextBlock Text="PRIORIDADE"/>
                     <telerik:RadComboBox x:Name="cbStatu"
                                          Width="130"
+                                         Margin="0,0,2,0"
                                          ItemsSource="{Binding Status}"
                                          SelectedItem="{Binding Statu}"
                                          DisplayMemberPath="status"/>
@@ -145,6 +179,7 @@
                     <TextBlock Text="SOLICITANTE"/>
                     <telerik:RadWatermarkTextBox x:Name="txtSolicitante"
                                                  Width="370"
+                                                 Margin="0,0,2,0"
                                                  TextAlignment="Center"/>
                 </StackPanel>
 
@@ -154,6 +189,12 @@
                                          Width="120"
                                          IsEditable="True"
                                          OpenDropDownOnFocus="True"
+                                         IsTextSearchEnabled="True" 
+                                         StaysOpenOnEdit="True" 
+                                         CanAutocompleteSelectItems="False" 
+                                         CanKeyboardNavigationSelectItems="False" 
+                                         UpdateSelectionOnLostFocus="False" 
+                                         UpdateTextOnLostFocus="False"
                                          ItemsSource="{Binding Siglas}"
                                          DisplayMemberPath="sigla_serv"
                                          SelectedItem="{Binding Sigla}"/>
@@ -171,8 +212,15 @@
                         <TextBlock Text="FASE"/>
                         <telerik:RadComboBox x:Name="cbFase"
                                              Width="250"
+                                             Margin="0,0,2,0"
                                              IsEditable="True"
                                              OpenDropDownOnFocus="True"
+                                             IsTextSearchEnabled="True" 
+                                             StaysOpenOnEdit="True" 
+                                             CanAutocompleteSelectItems="False" 
+                                             CanKeyboardNavigationSelectItems="False" 
+                                             UpdateSelectionOnLostFocus="False" 
+                                             UpdateTextOnLostFocus="False"
                                              ItemsSource="{Binding Fases}"
                                              DisplayMemberPath="fase"
                                              SelectedItem="{Binding Fase}"/>
@@ -182,8 +230,15 @@
                         <TextBlock Text="CLASSIFICAÇÃO"/>
                         <telerik:RadComboBox x:Name="cbClassificacao"
                                              Width="200"
+                                             Margin="0,0,2,0"
                                              IsEditable="True"
                                              OpenDropDownOnFocus="True"
+                                             IsTextSearchEnabled="True" 
+                                             StaysOpenOnEdit="True" 
+                                             CanAutocompleteSelectItems="False" 
+                                             CanKeyboardNavigationSelectItems="False" 
+                                             UpdateSelectionOnLostFocus="False" 
+                                             UpdateTextOnLostFocus="False"
                                              ItemsSource="{Binding Classificacoes}"
                                              DisplayMemberPath="classificacao"
                                              SelectedItem="{Binding Classificacao}"
@@ -203,22 +258,26 @@
                 </StackPanel>
             </GroupBox>
 
-            <StackPanel Orientation="Horizontal">
+            <StackPanel Orientation="Horizontal" Margin="0,2,0,2">
                 <telerik:RadButton x:Name="btnAdicionar"
                                    Content="Adicionar"
                                    Width="90"
+                                   Margin="0,0,2,0"
                                    Click="OnGravarClick"/>
                 <telerik:RadButton x:Name="btnAlterar"
                                    Content="Alterar"
                                    Width="90"
+                                   Margin="0,0,2,0"
                                    Click="OnEditarClick"/>
                 <telerik:RadButton x:Name="btnExcluir"
                                    Content="Excluir"
                                    Width="90"
+                                   Margin="0,0,2,0"
                                    Click="OnExcluirItem"/>
                 <telerik:RadButton x:Name="btnApagar"
                                    Content="Limpar"
                                    Width="90"
+                                   Margin="0,0,2,0"
                                    Click="OnLimparClick"/>
             </StackPanel>
         </StackPanel>

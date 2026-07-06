@@ -609,7 +609,7 @@ namespace Compras.Views
 
                 vm.Produtos = await Task.Run(() => vm.GetProdutosAsync(planilha?.planilha));
                 Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-                txtDescricao.Focus();
+                //txtDescricao.Focus();
             }
             catch (Exception ex)
             {
@@ -636,7 +636,7 @@ namespace Compras.Views
 
                 vm.DescAdicionais = await Task.Run(() => vm.GetDescAdicionaisAsync(produto?.codigo));
                 Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-                txtDescricaoAdicional.Focus();
+                //txtDescricaoAdicional.Focus();
 
                 unidade.Text = string.Empty;
             }
@@ -661,7 +661,7 @@ namespace Compras.Views
 
                 vm.CompleAdicionais = await Task.Run(() => vm.GetCompleAdicionaisAsync(adicional?.coduniadicional));
                 Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
-                txtComplementoAdicional.Focus();
+                //txtComplementoAdicional.Focus();
 
                 unidade.Text = string.Empty;
             }
@@ -679,7 +679,7 @@ namespace Compras.Views
             vm.Compledicional = complemento;
             idProduto.Text = complemento?.codcompladicional.ToString();
             unidade.Text = complemento?.unidade;
-            txtQuantidade.Focus();
+            //txtQuantidade.Focus();
         }
 
         private async void OnSelectionChanged(object sender, SelectionChangeEventArgs e)

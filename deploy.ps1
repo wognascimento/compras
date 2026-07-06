@@ -307,8 +307,6 @@ if (-not [string]::IsNullOrWhiteSpace($runtimeInstallerSourcePath)) {
     Copy-Item -Path $runtimeInstallerSourcePath -Destination $runtimeInstallerTargetPath -Force
 }
 
-Test-ServerVersion -LocalVersion $version -BaseUrl $UpdateBaseUrl -Force:$ForceDeploy
-
 Invoke-NativeCommand -FilePath "dotnet" -Arguments @("publish", $projectFile, "-c", "Release", "-o", $publishPath)
 
 Push-Location $projectPath
@@ -342,6 +340,8 @@ $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($versionJsonPath, $updateJson, $utf8NoBom)
 
 if (-not $SkipServerUpload) {
+    Test-ServerVersion -LocalVersion $version -BaseUrl $UpdateBaseUrl -Force:$ForceDeploy
+
     Invoke-NativeCommand -FilePath "scp" -Arguments @($zipFullPath, $ServerUploadPath)
     Invoke-NativeCommand -FilePath "scp" -Arguments @($versionJsonPath, "$($ServerUploadPath.TrimEnd('/'))/version.json")
 }
