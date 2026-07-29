@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Telerik.Windows.Controls.GridView;
 
 namespace Compras.Views
 {
@@ -134,6 +135,45 @@ namespace Compras.Views
                 item.RecalcularQuantidadeCompra();
         }
 
+        private async void GridPendentes_RowEditEnded(object sender, Telerik.Windows.Controls.GridViewRowEditEndedEventArgs e)
+        {
+            if (e.EditAction != GridViewEditAction.Commit ||
+                e.NewData is not AlmoxarifadoSolicitacaoPendenteModel item)
+            {
+                return;
+            }
+
+            if (item.finalizado == true)
+            {
+                item.finalizado_por = DataBaseSettings.Instance.Username;
+                item.finalizado_em = DateTime.Now;
+            }
+            else
+            {
+                item.finalizado = false;
+                item.finalizado_por = null;
+                item.finalizado_em = null;
+            }
+
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+                await ViewModel.SalvarFinalizadoPendenteAsync(item);
+
+                if (item.finalizado == true)
+                    ViewModel.SolicitacoesPendentes.Remove(item);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Finalizar solicitação", MessageBoxButton.OK, MessageBoxImage.Error);
+                await CarregarPendentesAsync();
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
+        }
+
         private async void OnSalvarConsolidacao(object sender, RoutedEventArgs e)
         {
             try
@@ -186,14 +226,70 @@ namespace Compras.Views
         public async Task<ObservableCollection<AlmoxarifadoSolicitacaoPendenteModel>> GetSolicitacoesPendentesAsync()
         {
             const string sql = """
-                SELECT *
-                FROM compras.qry_almoxarifado_solicitacoes_pendentes
-                ORDER BY data_informado, cod_item;
+                SELECT
+                    item.cod_item,
+                    item.cod_solicitacao,
+                    item.codcompleadicional,
+                    item.codprodutocompra,
+                    item.codfornecedor AS idfornecedor,
+                    solicitacao.almox_recebimento,
+                    solicitacao.tipo,
+                    descricao.familia,
+                    descricao.planilha,
+                    descricao.descricao_completa,
+                    descricao.unidade,
+                    descricao.saldo_estoque,
+                    item.quantidade,
+                    item.obs_solicitacao,
+                    item.data_informado,
+                    item.data_utilizacao,
+                    item.solicitante,
+                    item.cliente,
+                    fornecedor.nomefantasia,
+                    solicitacao.data_solicitacao,
+                    item.status_fluxo,
+                    item.finalizado,
+                    item.finalizado_por,
+                    item.finalizado_em
+                FROM compras.solicitacao_material_itens item
+                JOIN compras.solicitacao_material solicitacao
+                    ON solicitacao.cod_solicitacao = item.cod_solicitacao
+                LEFT JOIN producao.qry3descricoes descricao
+                    ON descricao.codcompladicional = item.codcompleadicional
+                LEFT JOIN compras.fornecedores fornecedor
+                    ON fornecedor.idfornecedor = item.codfornecedor
+                WHERE COALESCE(item.finalizado, false) = false
+                  AND COALESCE(solicitacao.tipo, '') <> 'SERVIÇO'
+                  AND COALESCE(item.status_fluxo, 'SOLICITADO') IN ('SOLICITADO', 'EM_ALMOX')
+                ORDER BY item.data_informado, item.cod_item;
                 """;
 
             await using var connection = CreateConnection();
             var data = await connection.QueryAsync<AlmoxarifadoSolicitacaoPendenteModel>(sql);
             return new ObservableCollection<AlmoxarifadoSolicitacaoPendenteModel>(data);
+        }
+
+        public async Task SalvarFinalizadoPendenteAsync(AlmoxarifadoSolicitacaoPendenteModel item)
+        {
+            const string sql = """
+                UPDATE compras.solicitacao_material_itens
+                SET finalizado = @finalizado,
+                    finalizado_por = @finalizado_por,
+                    finalizado_em = @finalizado_em
+                WHERE cod_item = @cod_item;
+                """;
+
+            await using var connection = CreateConnection();
+            var linhas = await connection.ExecuteAsync(sql, new
+            {
+                item.finalizado,
+                item.finalizado_por,
+                item.finalizado_em,
+                item.cod_item
+            });
+
+            if (linhas != 1)
+                throw new InvalidOperationException("A solicitação pendente não foi localizada para finalizar.");
         }
 
         public void AdicionarPendentes(IEnumerable<AlmoxarifadoSolicitacaoPendenteModel> itens)

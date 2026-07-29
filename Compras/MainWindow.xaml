@@ -40,6 +40,7 @@
             </telerik:RadMenuItem>
 
             <telerik:RadMenuItem Header="Consultas">
+                <telerik:RadMenuItem Header="Almoxarifado Finalizados" Click="OnFinalizadasAlmoxarifado"/>
                 <telerik:RadMenuItem Header="Solicitações Finalizadas Legado" Click="OnFinalizadas"/>
                 <telerik:RadMenuItem Header="Solicitações Finalizadas Material" Click="OnFinalizadasMaterial"/>
                 <telerik:RadMenuItem Header="Gerenciamento" Click="OnOpenConsultaGerencial"/>

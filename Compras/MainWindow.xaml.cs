@@ -587,6 +587,14 @@ namespace Compras
                 "SOLICITACOES_FINALIZADAS_LEGADO");
         }
 
+        private void OnFinalizadasAlmoxarifado(object sender, RoutedEventArgs e)
+        {
+            adicionarFilho(
+                new ViewAlmoxarifadoFinalizados(),
+                "ALMOXARIFADO FINALIZADOS",
+                "ALMOXARIFADO_FINALIZADOS");
+        }
+
         private void OnFinalizadasMaterial(object sender, RoutedEventArgs e)
         {
             adicionarFilho(

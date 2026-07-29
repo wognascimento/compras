@@ -15,6 +15,7 @@ namespace Compras
         public long? idfornecedor { get; set; }
         public string? almox_recebimento { get; set; }
         public string? tipo { get; set; }
+        public string? familia { get; set; }
         public string? planilha { get; set; }
         public string? descricao_completa { get; set; }
         public string? unidade { get; set; }
@@ -28,5 +29,8 @@ namespace Compras
         public string? nomefantasia { get; set; }
         public DateTime? data_solicitacao { get; set; }
         public string? status_fluxo { get; set; }
+        public bool? finalizado { get; set; }
+        public string? finalizado_por { get; set; }
+        public DateTime? finalizado_em { get; set; }
     }
 }

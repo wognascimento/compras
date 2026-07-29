@@ -1,0 +1,51 @@
+<UserControl
+    x:Class="Compras.Views.ViewAlmoxarifadoFinalizados"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+    Loaded="UserControl_Loaded"
+    d:DesignHeight="450"
+    d:DesignWidth="1000"
+    mc:Ignorable="d">
+
+    <Grid>
+        <telerik:RadGridView
+            x:Name="gridFinalizados"
+            AutoGenerateColumns="False"
+            CanUserDeleteRows="False"
+            CanUserInsertRows="False"
+            IsFilteringAllowed="True"
+            ItemsSource="{Binding ItensFinalizados}"
+            RowEditEnded="GridFinalizados_RowEditEnded"
+            SelectionMode="Extended"
+            ShowGroupPanel="False">
+            <telerik:RadGridView.Columns>
+                <telerik:GridViewCheckBoxColumn
+                    DataMemberBinding="{Binding finalizado, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    EditTriggers="CellClick"
+                    Header="FINALIZADO"
+                    IsReadOnly="False"
+                    Width="90" />
+                <telerik:GridViewDataColumn DataMemberBinding="{Binding finalizado_por}" Header="FINALIZADO POR" IsReadOnly="True" Width="140" />
+                <telerik:GridViewDataColumn DataMemberBinding="{Binding finalizado_em}" Header="FINALIZADO EM" DataFormatString="{}{0:dd/MM/yyyy HH:mm:ss}" IsReadOnly="True" Width="150" />
+                <telerik:GridViewDataColumn DataMemberBinding="{Binding cod_item}" Header="ITEM ALMOX." IsReadOnly="True" Width="100" />
+                <telerik:GridViewDataColumn DataMemberBinding="{Binding data_solicitacao}" Header="DATA SOLIC." DataFormatString="{}{0:dd/MM/yyyy}" IsReadOnly="True" Width="105" />
+                <telerik:GridViewDataColumn DataMemberBinding="{Binding cod_solicitacao}" Header="SOLIC." IsReadOnly="True" Width="90" />
+                <telerik:GridViewDataColumn DataMemberBinding="{Binding almox_recebimento}" Header="ALMOX." IsReadOnly="True" Width="110" />
+                <telerik:GridViewDataColumn DataMemberBinding="{Binding tipo}" Header="TIPO" IsReadOnly="True" Width="90" />
+                <telerik:GridViewDataColumn DataMemberBinding="{Binding familia}" Header="FAMÍLIA" IsReadOnly="True" Width="120" />
+                <telerik:GridViewDataColumn DataMemberBinding="{Binding planilha}" Header="PLANILHA" IsReadOnly="True" Width="120" />
+                <telerik:GridViewDataColumn DataMemberBinding="{Binding descricao_completa}" Header="DESCRIÇÃO" IsReadOnly="True" Width="*" />
+                <telerik:GridViewDataColumn DataMemberBinding="{Binding quantidade}" Header="QTDE. SOL." DataFormatString="{}{0:N2}" IsReadOnly="True" Width="95" />
+                <telerik:GridViewDataColumn DataMemberBinding="{Binding unidade}" Header="UNID." IsReadOnly="True" Width="75" />
+                <telerik:GridViewDataColumn DataMemberBinding="{Binding saldo_estoque}" Header="ESTOQUE" DataFormatString="{}{0:N2}" IsReadOnly="True" Width="90" />
+                <telerik:GridViewDataColumn DataMemberBinding="{Binding obs_solicitacao}" Header="OBS. SOLIC." IsReadOnly="True" Width="180" />
+                <telerik:GridViewDataColumn DataMemberBinding="{Binding solicitante}" Header="SOLICITANTE(S)" IsReadOnly="True" Width="160" />
+                <telerik:GridViewDataColumn DataMemberBinding="{Binding cliente}" Header="CLIENTE(S)" IsReadOnly="True" Width="150" />
+                <telerik:GridViewDataColumn DataMemberBinding="{Binding nomefantasia}" Header="FORNECEDOR" IsReadOnly="True" Width="140" />
+            </telerik:RadGridView.Columns>
+        </telerik:RadGridView>
+    </Grid>
+</UserControl>

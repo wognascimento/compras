@@ -47,21 +47,27 @@
                     x:Name="gridPendentes"
                     AutoGenerateColumns="False"
                     CanUserInsertRows="False"
-                    IsReadOnly="True"
                     ItemsSource="{Binding SolicitacoesPendentes}"
                     PreviewMouseLeftButtonDown="GridPendentes_PreviewMouseLeftButtonDown"
                     PreviewMouseMove="GridPendentes_PreviewMouseMove"
+                    RowEditEnded="GridPendentes_RowEditEnded"
                     SelectionMode="Extended"
                     ShowGroupPanel="False">
                     <telerik:RadGridView.Columns>
-                        <telerik:GridViewDataColumn DataMemberBinding="{Binding cod_item}" Header="Item" Width="70" />
-                        <telerik:GridViewDataColumn DataMemberBinding="{Binding descricao_completa}" Header="Descrição" Width="auto" EnableDistinctValuesFiltering="True" DistinctValuesSearchMode="Contains"/>
-                        <telerik:GridViewDataColumn DataMemberBinding="{Binding quantidade}" Header="Qtde." DataFormatString="{}{0:N2}" Width="90" />
-                        <telerik:GridViewDataColumn DataMemberBinding="{Binding unidade}" Header="Unid." Width="70" />
-                        <telerik:GridViewDataColumn DataMemberBinding="{Binding saldo_estoque}" Header="Estoque" DataFormatString="{}{0:N2}" Width="90" />
-                        <telerik:GridViewDataColumn DataMemberBinding="{Binding data_solicitacao}" Header="Data Solic." DataFormatString="{}{0:dd/MM/yyyy}" Width="95" />
-                        <telerik:GridViewDataColumn DataMemberBinding="{Binding solicitante}" Header="Solicitante" Width="120" />
-                        <telerik:GridViewDataColumn DataMemberBinding="{Binding cliente}" Header="Cliente" Width="100" />
+                        <telerik:GridViewCheckBoxColumn
+                            DataMemberBinding="{Binding finalizado, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            EditTriggers="CellClick"
+                            Header="Finalizado"
+                            IsReadOnly="False"
+                            Width="90" />
+                        <telerik:GridViewDataColumn IsReadOnly="True" DataMemberBinding="{Binding cod_item}" Header="Item" Width="70" />
+                        <telerik:GridViewDataColumn IsReadOnly="True" DataMemberBinding="{Binding descricao_completa}" Header="Descrição" Width="auto" EnableDistinctValuesFiltering="True" DistinctValuesSearchMode="Contains"/>
+                        <telerik:GridViewDataColumn IsReadOnly="True" DataMemberBinding="{Binding quantidade}" Header="Qtde." DataFormatString="{}{0:N2}" Width="90" />
+                        <telerik:GridViewDataColumn IsReadOnly="True" DataMemberBinding="{Binding unidade}" Header="Unid." Width="70" />
+                        <telerik:GridViewDataColumn IsReadOnly="True" DataMemberBinding="{Binding saldo_estoque}" Header="Estoque" DataFormatString="{}{0:N2}" Width="90" />
+                        <telerik:GridViewDataColumn IsReadOnly="True" DataMemberBinding="{Binding data_solicitacao}" Header="Data Solic." DataFormatString="{}{0:dd/MM/yyyy}" Width="95" />
+                        <telerik:GridViewDataColumn IsReadOnly="True" DataMemberBinding="{Binding solicitante}" Header="Solicitante" Width="120" />
+                        <telerik:GridViewDataColumn IsReadOnly="True" DataMemberBinding="{Binding cliente}" Header="Cliente" Width="100" />
                         <!--<telerik:GridViewDataColumn DataMemberBinding="{Binding almox_recebimento}" Header="Almox." Width="90" />-->
                     </telerik:RadGridView.Columns>
                 </telerik:RadGridView>
