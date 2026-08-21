@@ -21,9 +21,9 @@
 
             <telerik:RadMenuItem Header="Encaminhamento">
                 <telerik:RadMenuItem Header="Almoxarifado" Click="OnOpenEncaminhamentoAlmoxarifado"/>
-                <telerik:RadMenuItem Header="Material Legado" Click="OnOpenEncaminhamentoMaterialLegado"/>
+                <!--<telerik:RadMenuItem Header="Material Legado" Click="OnOpenEncaminhamentoMaterialLegado"/>-->
                 <telerik:RadMenuItem Header="Material" Click="OnOpenEncaminhamentoMaterial"/>
-                <telerik:RadMenuItem Header="Material Legado Pedido" Click="OnOpenEncaminhamento"/>
+                <!--<telerik:RadMenuItem Header="Material Legado Pedido" Click="OnOpenEncaminhamento"/>-->
                 <telerik:RadMenuItem Header="Material Pedido" Click="OnOpenNovoEncaminhamento"/>
                 <telerik:RadMenuItem Header="Serviço" Click="OnOpenEncaminhamentoServico"/>
             </telerik:RadMenuItem>
@@ -41,7 +41,7 @@
 
             <telerik:RadMenuItem Header="Consultas">
                 <telerik:RadMenuItem Header="Almoxarifado Finalizados" Click="OnFinalizadasAlmoxarifado"/>
-                <telerik:RadMenuItem Header="Solicitações Finalizadas Legado" Click="OnFinalizadas"/>
+                <!--<telerik:RadMenuItem Header="Solicitações Finalizadas Legado" Click="OnFinalizadas"/>-->
                 <telerik:RadMenuItem Header="Solicitações Finalizadas Material" Click="OnFinalizadasMaterial"/>
                 <telerik:RadMenuItem Header="Gerenciamento" Click="OnOpenConsultaGerencial"/>
                 <telerik:RadMenuItem Header="Todas as Descrições" Click="OnOpenTodasDescricoes"/>
