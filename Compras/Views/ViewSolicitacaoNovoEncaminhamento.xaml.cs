@@ -27,6 +27,7 @@ namespace Compras.Views
     {
         private readonly DataBaseSettings baseSettings = DataBaseSettings.Instance;
         private Point? dragStartPoint;
+        private readonly Dictionary<long, SolicitacaoEncaminhadaEditableSnapshot> valoresOriginaisPendentes = [];
 
         public ViewSolicitacaoNovoEncaminhamento(
             string tipo = "MATERIAIS",
@@ -193,31 +194,105 @@ namespace Compras.Views
             }
         }
 
-        private async void GridPendentes_RowEditEnded(object sender, GridViewRowEditEndedEventArgs e)
+        private void GridPendentes_BeginningEdit(object sender, GridViewBeginningEditRoutedEventArgs e)
         {
-            if (e.EditAction != GridViewEditAction.Commit || e.NewData is not SolicitacaoEncaminhadaModel item)
+            if (e.Cell?.DataContext is not SolicitacaoEncaminhadaModel item ||
+                item.cod_item is null ||
+                e.Cell.Column?.UniqueName == "finalizado")
+            {
                 return;
+            }
+
+            valoresOriginaisPendentes.TryAdd(
+                item.cod_item.Value,
+                SolicitacaoEncaminhadaEditableSnapshot.From(item));
+        }
+
+        private async void FinalizadoCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not CheckBox checkBox ||
+                checkBox.DataContext is not SolicitacaoEncaminhadaModel item)
+            {
+                return;
+            }
 
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
+                item.finalizado = checkBox.IsChecked == true;
+                await SalvarFinalizadoPendenteAsync(item);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Salvar finalizado", MessageBoxButton.OK, MessageBoxImage.Error);
+                await CarregarPendentesAsync();
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
+        }
 
-                if (item.finalizado == true)
-                {
-                    item.finalizado_por = DataBaseSettings.Instance.Username;
-                    item.finalizado_em = DateTime.Now;
-                }
-                else
-                {
-                    item.finalizado = false;
-                    item.finalizado_por = null;
-                    item.finalizado_em = null;
-                }
+        private async Task SalvarFinalizadoPendenteAsync(SolicitacaoEncaminhadaModel item)
+        {
+            if (item.finalizado == true)
+            {
+                item.finalizado_por = DataBaseSettings.Instance.Username;
+                item.finalizado_em = DateTime.Now;
+            }
+            else
+            {
+                item.finalizado = false;
+                item.finalizado_por = null;
+                item.finalizado_em = null;
+            }
 
+            await ViewModel.SalvarFinalizadoAsync(item);
+
+            if (item.finalizado == true)
+                ViewModel.SolicitacoesPendentes.Remove(item);
+        }
+
+        private void GridPendentes_RowValidating(object sender, GridViewRowValidatingEventArgs e)
+        {
+            if (e.Row.Item is not SolicitacaoEncaminhadaModel item)
+                return;
+
+            if (item.quantidade_compra is null or <= 0)
+            {
+                e.ValidationResults.Add(new GridViewCellValidationResult
+                {
+                    PropertyName = nameof(SolicitacaoEncaminhadaModel.quantidade_compra),
+                    ErrorMessage = "Informe a quantidade de compra maior que zero."
+                });
+            }
+
+            if (item.preco is < 0)
+            {
+                e.ValidationResults.Add(new GridViewCellValidationResult
+                {
+                    PropertyName = nameof(SolicitacaoEncaminhadaModel.preco),
+                    ErrorMessage = "O preço não pode ser negativo."
+                });
+            }
+        }
+
+        private async void GridPendentes_RowValidated(object sender, GridViewRowValidatedEventArgs e)
+        {
+            if (e.Row.Item is not SolicitacaoEncaminhadaModel item || item.cod_item is null)
+                return;
+
+            if (!valoresOriginaisPendentes.TryGetValue(item.cod_item.Value, out var original) ||
+                original.EqualsCurrent(item))
+            {
+                return;
+            }
+
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
                 await ViewModel.SalvarSolicitacaoAsync(item);
-
-                if (item.finalizado == true)
-                    ViewModel.SolicitacoesPendentes.Remove(item);
+                valoresOriginaisPendentes[item.cod_item.Value] = SolicitacaoEncaminhadaEditableSnapshot.From(item);
             }
             catch (Exception ex)
             {
@@ -721,6 +796,61 @@ namespace Compras.Views
             }
         }
 
+        public async Task SalvarFinalizadoAsync(SolicitacaoEncaminhadaModel item)
+        {
+            var origemTabela = tipo == "SERVIÇO"
+                ? "compras.solicitacao_material_itens"
+                : "compras.almoxarifado_encaminhamento_itens";
+
+            var sql = tipo == "SERVIÇO"
+                ? """
+                UPDATE compras.solicitacao_material_itens
+                SET finalizado = @finalizado,
+                    finalizado_por = @finalizado_por,
+                    finalizado_em = @finalizado_em
+                WHERE cod_item = @cod_item;
+                """
+                : """
+                UPDATE compras.almoxarifado_encaminhamento_itens
+                SET finalizado = @finalizado,
+                    finalizado_por = @finalizado_por,
+                    finalizado_em = @finalizado_em,
+                    alterado_por = @alterado_por,
+                    alterado_em = @alterado_em
+                WHERE id_almox_item = @cod_item;
+                """;
+
+            await using var connection = CreateConnection();
+            await connection.OpenAsync();
+            await using var transaction = await connection.BeginTransactionAsync();
+
+            try
+            {
+                await EnsureHistoricoTableAsync(connection, transaction);
+                await SalvarHistoricoAntesAlteracaoAsync(connection, transaction, item.cod_item, origemTabela);
+
+                var linhas = await connection.ExecuteAsync(sql, new
+                {
+                    item.finalizado,
+                    item.finalizado_por,
+                    item.finalizado_em,
+                    alterado_por = baseSettings.Username,
+                    alterado_em = DateTime.Now,
+                    item.cod_item
+                }, transaction);
+
+                if (linhas != 1)
+                    throw new InvalidOperationException("A solicitação não foi localizada para finalizar.");
+
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
         public async Task<ObservableCollection<SolicitacaoEncaminhamentoHistoricoModel>> GetHistoricoAsync(SolicitacaoEncaminhadaModel item)
         {
             var origemTabela = tipo == "SERVIÇO"
@@ -1004,5 +1134,35 @@ namespace Compras.Views
         public string? valor_anterior { get; set; }
         public string? alterado_por { get; set; }
         public DateTime alterado_em { get; set; }
+    }
+
+    internal sealed record SolicitacaoEncaminhadaEditableSnapshot(
+        DateTime? data_entrega,
+        double? quantidade_compra,
+        double? preco,
+        string? orientacao_compra,
+        string? orientacao_roteiro,
+        bool? pedido)
+    {
+        public static SolicitacaoEncaminhadaEditableSnapshot From(SolicitacaoEncaminhadaModel item)
+        {
+            return new(
+                item.data_entrega,
+                item.quantidade_compra,
+                item.preco,
+                item.orientacao_compra,
+                item.orientacao_roteiro,
+                item.pedido);
+        }
+
+        public bool EqualsCurrent(SolicitacaoEncaminhadaModel item)
+        {
+            return data_entrega == item.data_entrega &&
+                   quantidade_compra == item.quantidade_compra &&
+                   preco == item.preco &&
+                   string.Equals(orientacao_compra, item.orientacao_compra, StringComparison.Ordinal) &&
+                   string.Equals(orientacao_roteiro, item.orientacao_roteiro, StringComparison.Ordinal) &&
+                   pedido == item.pedido;
+        }
     }
 }
