@@ -257,7 +257,7 @@ namespace Compras.Views
         {
             if (e.Row.Item is not SolicitacaoEncaminhadaModel item)
                 return;
-
+            /*
             if (item.quantidade_compra is null or <= 0)
             {
                 e.ValidationResults.Add(new GridViewCellValidationResult
@@ -266,7 +266,7 @@ namespace Compras.Views
                     ErrorMessage = "Informe a quantidade de compra maior que zero."
                 });
             }
-
+            */
             if (item.preco is < 0)
             {
                 e.ValidationResults.Add(new GridViewCellValidationResult
