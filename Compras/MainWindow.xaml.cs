@@ -75,12 +75,12 @@ namespace Compras
                 .FirstOrDefault(p => string.Equals(p.Name, name_.ToLower(), StringComparison.OrdinalIgnoreCase));
         }
 
-        private void OnOpenSolicitacao(object sender, RoutedEventArgs e)
+        private void OnOpenSolicitacao(object sender, Telerik.Windows.RadRoutedEventArgs e)
         {
             adicionarFilho(new ViewSolicitacao(), "SOLICITAÇÃO MATERIAL/SERVIÇO", "SOLICITACAO_MATERIAL_SERVICO");
         }
 
-        private void OnOpenEncaminhamento(object sender, RoutedEventArgs e)
+        private void OnOpenEncaminhamento(object sender, Telerik.Windows.RadRoutedEventArgs e)
         {
             adicionarFilho(
                 new ViewSolicitacaoEncaminhamento("MATERIAIS"),
@@ -104,12 +104,12 @@ namespace Compras
                 "MATERIAL");
         }
 
-        private void OnOpenEncaminhamentoAlmoxarifado(object sender, RoutedEventArgs e)
+        private void OnOpenEncaminhamentoAlmoxarifado(object sender, Telerik.Windows.RadRoutedEventArgs e)
         {
             adicionarFilho(new ViewSolicitacaoEncaminhamentoAlmoxarifado(), "ENCAMINHAMENTO ALMOXARIFADO", "ENCAMINHAMENTO_ALMOXARIFADO");
         }
 
-        private void OnOpenNovoEncaminhamento(object sender, RoutedEventArgs e)
+        private void OnOpenNovoEncaminhamento(object sender, Telerik.Windows.RadRoutedEventArgs e)
         {
             adicionarFilho(
                 new ViewSolicitacaoNovoEncaminhamento("MATERIAIS"),
@@ -117,12 +117,12 @@ namespace Compras
                 "MATERIAL_PEDIDO");
         }
 
-        private void OnOpenEncaminhamentoServico(object sender, RoutedEventArgs e)
+        private void OnOpenEncaminhamentoServico(object sender, Telerik.Windows.RadRoutedEventArgs e)
         {
             adicionarFilho(new ViewSolicitacaoEncaminhamento("SERVIÇO"), "ENCAMINHAMENTO SOLICITAÇÃO SERVIÇO", "ENCAMINHAMENTO_SOLICITACAO_SERVICO");
         }
 
-        private async void OnImportFile(object sender, RoutedEventArgs e)
+        private async void OnImportFile(object sender, Telerik.Windows.RadRoutedEventArgs e)
         {
             Microsoft.Win32.OpenFileDialog dialog = new();
             bool result = false;
@@ -171,9 +171,9 @@ namespace Compras
                     var PedidoEntrega = worksheet.Cell("C9").GetString();
                     var PedidoDnota = worksheet.Cell("E9").GetString();
                     var PedidoNnota = worksheet.Cell("G9").GetString();
-                    var empresa = worksheet.Cell("C6").GetString();
-                    var fornecedor = worksheet.Cell("C7").GetString();
-                    var condicoes = worksheet.Cell("D8").GetString();
+                    var empresa = Compras.Utils.PedidoCompraListas.LerCodigo(workbook, "C6", "empresas");
+                    var fornecedor = Compras.Utils.PedidoCompraListas.LerCodigo(workbook, "C7", "fornecedores");
+                    var condicoes = Compras.Utils.PedidoCompraListas.LerCodigo(workbook, "D8", "condicoes");
 
                     if (pedido == "" || pedido == "#N/A")
                     {
@@ -215,6 +215,10 @@ namespace Compras
                         MessageBox.Show("Número da nota não informada", "Valiação de Dados");
                         return;
                     }
+
+                    var codigoEmpresa = Compras.Utils.PedidoCompraListas.ValidarCodigo(empresa, "Empresa");
+                    var codigoFornecedor = Compras.Utils.PedidoCompraListas.ValidarCodigo(fornecedor, "Fornecedor");
+                    var codigoCondicao = Compras.Utils.PedidoCompraListas.ValidarCodigo(condicoes, "Condição de pagamento");
 
                     ObservableCollection<PedidoDetalhesModel> produtos = [];
                     for (int i = 12; i < 31; i++)
@@ -264,7 +268,7 @@ namespace Compras
                             """;
                         var parcelasInvalidas = await connection.ExecuteScalarAsync<int>(
                             parcelasSql,
-                            new { idCondPagamento = long.Parse(condicoes) });
+                            new { idCondPagamento = codigoCondicao });
 
                         if (parcelasInvalidas > 0)
                         {
@@ -277,9 +281,9 @@ namespace Compras
                         {
                             idpedido = long.Parse(pedido), 
                             datapedido = DateTime.Parse(PedidoDt),
-                            codempresa = long.Parse(empresa),
-                            codfornecedor= long.Parse(fornecedor),
-                            id_cond_pagamento= long.Parse(condicoes),
+                            codempresa = codigoEmpresa,
+                            codfornecedor = codigoFornecedor,
+                            id_cond_pagamento = codigoCondicao,
                             status = "FINALIZADO", 
                             status_por = BaseSettings.Username, 
                             status_data = DateTime.Now,
@@ -297,7 +301,7 @@ namespace Compras
                         string? ano = BaseSettings?.Database?.Remove(0, 2);
                         File.Move($"\\\\192.168.0.1\\compras_{ano}\\PEDIDOS_DE_COMPRAS_{ano}\\ABERTOS_{ano}\\{arquivo}", $"\\\\192.168.0.1\\compras_{ano}\\PEDIDOS_DE_COMPRAS_{ano}\\FINALIZADOS_{ano}\\{arquivo}");
                         */
-                        MessageBox.Show("Pedido importado com sucesso e movido para pasta de 'FINALIZADOS'!", "Pedido", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                        MessageBox.Show("Pedido importado com sucesso!", "Pedido", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                     }
                     catch (Exception ex)
                     {
@@ -311,7 +315,10 @@ namespace Compras
                     Application.Current.Dispatcher.Invoke(() => { Mouse.OverrideCursor = null; });
                     MessageBox.Show(ex.Message);
                 }
-                
+                finally
+                {
+                    Mouse.OverrideCursor = null;
+                }
             }
         }
 

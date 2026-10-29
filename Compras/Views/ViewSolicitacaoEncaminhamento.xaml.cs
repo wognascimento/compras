@@ -311,6 +311,7 @@ namespace Compras.Views
                 var diretorio = Path.Combine(baseSettings.CaminhoSistema ?? string.Empty, "Impressos");
                 Directory.CreateDirectory(diretorio);
                 var arquivo = Path.Combine(diretorio, $"PEDIDO-COMPRA-{ViewModel.Pedido.idpedido}.xlsm");
+                Compras.Utils.PedidoCompraListas.Configurar(workbook);
                 workbook.SaveAs(arquivo);
 
                 Process.Start(new ProcessStartInfo(arquivo) { UseShellExecute = true });

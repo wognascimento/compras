@@ -1043,6 +1043,7 @@ namespace Compras.Views
                 Compras.Utils.ClosedXmlHelper.ImportarDados(workbook.Worksheet(4), empresas);
                 Compras.Utils.ClosedXmlHelper.DefinirNome(workbook, "empresas", workbook.Worksheet(4));
 
+                Compras.Utils.PedidoCompraListas.Configurar(workbook);
                 workbook.SaveAs(caminhoSaida);
                 return caminhoSaida;
             }
