@@ -32,7 +32,11 @@ namespace Compras
             Username = ReadSetting("Username", EnvUsername, Environment.UserName);
             Password = ReadSetting("Password", EnvPassword, null);
             CaminhoSistema = ReadSetting("SystemPath", null, CaminhoSistema);
-            UpdateInfoUrl = ReadSetting("UpdateInfoUrl", null, "http://192.168.0.49/downloads/compras/version.json");
+            UpdateInfoUrl = ReadSetting("UpdateInfoUrl", "COMPRAS_UPDATE_URL", "https://atualizasig.cipolatti.com.br/downloads/compras/version.json");
+            // Migrate legacy installations without overwriting database credentials.
+            if (string.Equals(UpdateInfoUrl?.Trim(), "http://192.168.0.49/downloads/compras/version.json", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(UpdateInfoUrl?.Trim(), "https://192.168.0.49/downloads/compras/version.json", StringComparison.OrdinalIgnoreCase))
+                UpdateInfoUrl = "https://atualizasig.cipolatti.com.br/downloads/compras/version.json";
 
             RefreshConnectionString();
         }
